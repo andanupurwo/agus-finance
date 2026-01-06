@@ -337,7 +337,7 @@ export default function App() {
       {/* HEADER with Date */}
       <Header user={user} setUser={setUser} />
 
-      <main className="flex-1 pt-24 px-4 sm:px-6 pb-20 overflow-y-auto">{renderContent()}</main>
+      <main className="flex-1 pt-24 px-1.5 sm:px-3 pb-20 overflow-y-auto">{renderContent()}</main>
 
       {/* BOTTOM NAV */}
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />

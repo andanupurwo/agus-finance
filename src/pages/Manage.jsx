@@ -20,7 +20,7 @@ export const Manage = ({
 }) => {
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-20 px-2">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-20 px-1.5">
       {/* TOTAL WEALTH */}
       <div>
         <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Total Uang (Wallet + Sisa Budget)</p>
@@ -56,7 +56,7 @@ export const Manage = ({
                       <Wallet size={24} />
                       {!isReadOnly && <div className="flex gap-2">
                         <button onClick={() => {
-                          setEditingData({id: w.id, type: 'wallets', name: w.name, description: w.description || ''});
+                          setEditingData({id: w.id, type: 'wallets', name: w.name, description: w.description || '', color: w.color});
                           setShowModal('editWallet');
                         }}><Edit2 size={16} className="opacity-50 hover:opacity-100"/></button>
                         <button onClick={() => handleDelete("wallets", w.id)}><Trash2 size={16} className="opacity-50 hover:opacity-100"/></button>

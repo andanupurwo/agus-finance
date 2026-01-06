@@ -1,22 +1,54 @@
-import React, { useState } from 'react';
-import { Database, AlertTriangle, Package, RefreshCw, Calendar, Trash, ChevronDown, Info, BookOpen } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Database, AlertTriangle, Package, RefreshCw, Calendar, Trash, ChevronDown, Info, BookOpen, BarChart3 } from 'lucide-react';
 import { useDeveloperMode } from '../hooks/useDeveloperMode';
 
 export const Settings = ({ wallets, budgets, transactions, setLoading, loading, user, showToast, showConfirm, demoEnabled, setDemoEnabled }) => {
   const { loadDummyData, loadDefaultCategories, resetFactory, clearTransactions, monthlyRollover } = useDeveloperMode(showToast, showConfirm);
   const [sections, setSections] = useState({
-    about: true,
+    about: false,
     guide: false,
     devMode: false,
     appInfo: false
   });
+  const sectionRefs = {
+    about: useRef(null),
+    guide: useRef(null),
+    devMode: useRef(null),
+    appInfo: useRef(null)
+  };
   const [devModeOpen, setDevModeOpen] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pin, setPin] = useState('');
   const [attemptedDevMode, setAttemptedDevMode] = useState(null);
 
   const toggleSection = (section) => {
-    setSections(prev => ({ ...prev, [section]: !prev[section] }));
+    setSections(prev => {
+      // Jika section yang diklik sedang terbuka, tutup saja
+      if (prev[section]) {
+        return { ...prev, [section]: false };
+      }
+      // Jika section yang diklik tertutup, buka dan tutup yang lain
+      return {
+        about: section === 'about',
+        guide: section === 'guide',
+        devMode: section === 'devMode',
+        appInfo: section === 'appInfo'
+      };
+    });
+    
+    // Scroll to section after state update with offset
+    setTimeout(() => {
+      if (sectionRefs[section].current) {
+        const element = sectionRefs[section].current;
+        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+        const offsetPosition = elementPosition - 80; // Offset dari top
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    }, 50);
   };
 
   const handleDevModeToggle = () => {
@@ -38,14 +70,14 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500 pb-20 px-2">
+    <div className="space-y-4 animate-in fade-in duration-500 pb-20 px-1.5">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">Settings</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400">Kelola aplikasi dan panduan penggunaan</p>
       </div>
 
       {/* ABOUT SECTION */}
-      <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm">
+      <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm" ref={sectionRefs.about}>
         <button
           onClick={() => toggleSection('about')}
           className="w-full p-5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900/80 transition-colors"
@@ -122,7 +154,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
       </div>
 
       {/* GUIDE SECTION */}
-      <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm">
+      <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm" ref={sectionRefs.guide}>
         <button
           onClick={() => toggleSection('guide')}
           className="w-full p-5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900/80 transition-colors"
@@ -196,7 +228,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
       </div>
 
       {/* DEVELOPER MODE SECTION */}
-      <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm">
+      <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm" ref={sectionRefs.devMode}>
         <button
           onClick={() => toggleSection('devMode')}
           className="w-full p-5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900/80 transition-colors"
@@ -309,12 +341,15 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
       </div>
 
       {/* APP INFO SECTION */}
-      <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm">
+      <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm" ref={sectionRefs.appInfo}>
         <button
           onClick={() => toggleSection('appInfo')}
           className="w-full p-5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900/80 transition-colors"
         >
-          <h3 className="font-bold text-slate-900 dark:text-white">Informasi Aplikasi</h3>
+          <div className="flex items-center gap-3">
+            <BarChart3 size={20} className="text-purple-600 dark:text-purple-400" />
+            <h3 className="font-bold text-slate-900 dark:text-white">Informasi Aplikasi</h3>
+          </div>
           <ChevronDown size={20} className={`text-slate-600 dark:text-slate-400 transition-transform ${sections.appInfo ? 'rotate-180' : ''}`} />
         </button>
         
@@ -365,7 +400,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
 
       {/* PIN MODAL */}
       {showPinModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowPinModal(false)}>
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-white/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowPinModal(false)}>
           <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in zoom-in-95 transition-colors duration-300 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">🔐 Masukkan PIN</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">PIN diperlukan untuk {attemptedDevMode ? 'mengaktifkan' : 'menonaktifkan'} Developer Mode</p>

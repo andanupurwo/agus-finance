@@ -188,7 +188,7 @@ export const useTransactions = (showToast, showConfirm) => {
                 description: newData.description || '',
                 amount: '0',
                 type: 'Rekening',
-                color: 'from-slate-800 to-slate-900 border-slate-700',
+                color: newData.color || 'from-slate-800 to-slate-900 border-slate-700',
                 createdAt: Date.now()
             });
         } else {
@@ -210,7 +210,7 @@ export const useTransactions = (showToast, showConfirm) => {
     setLoading(false);
   }
 
-  const handleEdit = async (collectionName, id, name, description, setShowModal, setEditingData) => {
+  const handleEdit = async (collectionName, id, name, description, color, setShowModal, setEditingData) => {
     if (!name.trim()) {
       showToast?.("Nama tidak boleh kosong", "error");
       return;
@@ -220,6 +220,9 @@ export const useTransactions = (showToast, showConfirm) => {
       const updateData = { name: name.trim() };
       if (description !== undefined) {
         updateData.description = description.trim();
+      }
+      if (color !== undefined && collectionName === 'wallets') {
+        updateData.color = color;
       }
       await updateDoc(doc(db, collectionName, id), updateData);
       showToast?.("Berhasil diperbarui", "success");

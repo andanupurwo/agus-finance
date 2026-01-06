@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 
-export function Toast({ message, type = 'success', onClose, duration = 3000 }) {
+export function Toast({ message, type = 'success', onClose, duration = 1500}) {
   useEffect(() => {
     if (duration > 0) {
       const timer = setTimeout(onClose, duration);
@@ -42,7 +42,7 @@ export function Toast({ message, type = 'success', onClose, duration = 3000 }) {
 
 export function ConfirmDialog({ message, onConfirm, onCancel }) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 px-4" onClick={onCancel}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-200 px-4" onClick={onCancel}>
       <div className="bg-white dark:bg-slate-900 max-w-sm w-full rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 transition-colors duration-300" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start gap-3 mb-6">
           <AlertCircle size={24} className="text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />

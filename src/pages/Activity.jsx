@@ -112,7 +112,7 @@ export const Activity = ({ transactions, wallets, budgets, handleDeleteTransacti
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-20 px-2">
+    <div className="space-y-4 animate-in fade-in duration-500 pb-20 px-1.5">
        <div className="flex items-center justify-between gap-3">
          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Riwayat</h2>
          <div className="flex items-center gap-2">
@@ -155,25 +155,25 @@ export const Activity = ({ transactions, wallets, budgets, handleDeleteTransacti
        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
          <button 
            onClick={() => setFilterType('all')}
-           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filterType === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'}`}
+           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filterType === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'}`}
          >
            Semua
          </button>
          <button 
            onClick={() => setFilterType('income')}
-           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filterType === 'income' ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'}`}
+           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filterType === 'income' ? 'bg-emerald-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'}`}
          >
            Pemasukan
          </button>
          <button 
            onClick={() => setFilterType('expense')}
-           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filterType === 'expense' ? 'bg-red-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'}`}
+           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filterType === 'expense' ? 'bg-red-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'}`}
          >
            Pengeluaran
          </button>
          <button 
            onClick={() => setFilterType('transfer')}
-           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filterType === 'transfer' ? 'bg-purple-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'}`}
+           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filterType === 'transfer' ? 'bg-purple-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'}`}
          >
            Transfer
          </button>
@@ -250,7 +250,7 @@ export const Activity = ({ transactions, wallets, budgets, handleDeleteTransacti
 
        {/* EDIT MODAL */}
        {editingTransaction && editData && (
-         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setEditingTransaction(null)}>
+         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-white/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setEditingTransaction(null)}>
            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in zoom-in-95 transition-colors duration-300 shadow-2xl" onClick={(e) => e.stopPropagation()}>
              <div className="flex justify-between items-center mb-4">
                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Edit Transaksi</h3>
