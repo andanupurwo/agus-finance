@@ -3,49 +3,76 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(() => {
-    // Always use system preference, ignore localStorage
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const [themeMode, setThemeMode] = useState(() => {
+    const saved = localStorage.getItem('themeMode');
+    return saved || 'system';
   });
 
-  // Initialize dark class on mount based on system preference
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
+  const [isDark, setIsDark] = useState(false);
 
-  // Listen to system theme changes
+  // Apply theme immediately when themeMode changes
   useEffect(() => {
+    let isDarkMode = false;
+
+    if (themeMode === 'dark') {
+      isDarkMode = true;
+    } else if (themeMode === 'light') {
+      isDarkMode = false;
+    } else if (themeMode === 'system') {
+      isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+
+    // Update state
+    setIsDark(isDarkMode);
+
+    // Apply the theme to DOM - force update
+    const htmlElement = document.documentElement;
+    if (isDarkMode) {
+      htmlElement.classList.remove('light');
+      htmlElement.classList.add('dark');
+    } else {
+      htmlElement.classList.remove('dark');
+      htmlElement.classList.add('light');
+    }
+  }, [themeMode]);
+
+  // Listen to system theme changes only when in system mode
+  useEffect(() => {
+    if (themeMode !== 'system') return;
+
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
+
     const handleChange = (e) => {
-      setIsDark(e.matches);
-      if (e.matches) {
+      const isDarkMode = e.matches;
+      setIsDark(isDarkMode);
+
+      if (isDarkMode) {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
       }
     };
-    
+
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  }, [themeMode]);
 
-  // toggleTheme is disabled - theme follows system preference only
+  const setTheme = (mode) => {
+    setThemeMode(mode);
+    localStorage.setItem('themeMode', mode);
+  };
+
   const toggleTheme = () => {
-    // Do nothing - theme is locked to system preference
+    const newMode = themeMode === 'dark' ? 'light' : 'dark';
+    setTheme(newMode);
   };
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+    <ThemeContext.Provider value={{ isDark, themeMode, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
 };
-
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {

@@ -1,16 +1,20 @@
 import React, { useState, useRef } from 'react';
-import { Database, AlertTriangle, Package, RefreshCw, Calendar, Trash, ChevronDown, Info, BookOpen, BarChart3 } from 'lucide-react';
+import { Database, AlertTriangle, Package, RefreshCw, Calendar, Trash, ChevronDown, Info, BookOpen, BarChart3, Sun, Moon, Monitor } from 'lucide-react';
 import { useDeveloperMode } from '../hooks/useDeveloperMode';
+import { useTheme } from '../context/ThemeContext';
 
 export const Settings = ({ wallets, budgets, transactions, setLoading, loading, user, showToast, showConfirm, demoEnabled, setDemoEnabled }) => {
   const { loadDummyData, loadDefaultCategories, resetFactory, clearTransactions, monthlyRollover } = useDeveloperMode(showToast, showConfirm);
+  const { themeMode, setTheme } = useTheme();
   const [sections, setSections] = useState({
+    theme: false,
     about: false,
     guide: false,
     devMode: false,
     appInfo: false
   });
   const sectionRefs = {
+    theme: useRef(null),
     about: useRef(null),
     guide: useRef(null),
     devMode: useRef(null),
@@ -29,20 +33,21 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
       }
       // Jika section yang diklik tertutup, buka dan tutup yang lain
       return {
+        theme: section === 'theme',
         about: section === 'about',
         guide: section === 'guide',
         devMode: section === 'devMode',
         appInfo: section === 'appInfo'
       };
     });
-    
+
     // Scroll to section after state update with offset
     setTimeout(() => {
       if (sectionRefs[section].current) {
         const element = sectionRefs[section].current;
         const elementPosition = element.getBoundingClientRect().top + window.scrollY;
         const offsetPosition = elementPosition - 80; // Offset dari top
-        
+
         window.scrollTo({
           top: offsetPosition,
           behavior: 'smooth'
@@ -76,6 +81,115 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
         <p className="text-xs text-slate-500 dark:text-slate-400">Kelola aplikasi dan panduan penggunaan</p>
       </div>
 
+      {/* THEME SECTION */}
+      <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm" ref={sectionRefs.theme}>
+        <button
+          onClick={() => toggleSection('theme')}
+          className="w-full p-5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900/80 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            {themeMode === 'dark' ? (
+              <Moon size={20} className="text-indigo-600 dark:text-indigo-400" />
+            ) : themeMode === 'light' ? (
+              <Sun size={20} className="text-amber-600 dark:text-amber-400" />
+            ) : (
+              <Monitor size={20} className="text-slate-600 dark:text-slate-400" />
+            )}
+            <div className="text-left">
+              <h3 className="font-bold text-slate-900 dark:text-white">Tema Tampilan</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {themeMode === 'dark' ? 'Mode Gelap' : themeMode === 'light' ? 'Mode Terang' : 'Ikuti Sistem'}
+              </p>
+            </div>
+          </div>
+          <ChevronDown size={20} className={`text-slate-600 dark:text-slate-400 transition-transform ${sections.theme ? 'rotate-180' : ''}`} />
+        </button>
+
+        {sections.theme && (
+          <div className="border-t border-slate-200 dark:border-slate-800 p-5 space-y-3 animate-in fade-in duration-300">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Pilih tema tampilan aplikasi sesuai preferensi Anda
+            </p>
+
+            <div className="grid grid-cols-3 gap-3">
+              {/* Light Mode */}
+              <button
+                onClick={() => {
+                  setTheme('light');
+                  showToast('Tema diubah ke Mode Terang', 'success');
+                }}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${themeMode === 'light'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700'
+                  }`}
+              >
+                <Sun
+                  size={24}
+                  className={themeMode === 'light' ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}
+                />
+                <span className={`text-xs font-medium ${themeMode === 'light'
+                    ? 'text-amber-700 dark:text-amber-300'
+                    : 'text-slate-600 dark:text-slate-400'
+                  }`}>
+                  Terang
+                </span>
+              </button>
+
+              {/* Dark Mode */}
+              <button
+                onClick={() => {
+                  setTheme('dark');
+                  showToast('Tema diubah ke Mode Gelap', 'success');
+                }}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${themeMode === 'dark'
+                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700'
+                  }`}
+              >
+                <Moon
+                  size={24}
+                  className={themeMode === 'dark' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}
+                />
+                <span className={`text-xs font-medium ${themeMode === 'dark'
+                    ? 'text-indigo-700 dark:text-indigo-300'
+                    : 'text-slate-600 dark:text-slate-400'
+                  }`}>
+                  Gelap
+                </span>
+              </button>
+
+              {/* System Mode */}
+              <button
+                onClick={() => {
+                  setTheme('system');
+                  showToast('Tema mengikuti pengaturan sistem', 'success');
+                }}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${themeMode === 'system'
+                    ? 'border-slate-500 bg-slate-50 dark:bg-slate-700/20'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                  }`}
+              >
+                <Monitor
+                  size={24}
+                  className={themeMode === 'system' ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400'} />
+                <span className={`text-xs font-medium ${themeMode === 'system'
+                    ? 'text-slate-700 dark:text-slate-200'
+                    : 'text-slate-600 dark:text-slate-400'
+                  }`}>
+                  Sistem
+                </span>
+              </button>
+            </div>
+
+            <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                <span className="font-semibold">💡 Tips:</span> Mode "Sistem" akan mengikuti pengaturan tema dari perangkat Anda secara otomatis.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ABOUT SECTION */}
       <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm" ref={sectionRefs.about}>
         <button
@@ -88,7 +202,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
           </div>
           <ChevronDown size={20} className={`text-slate-600 dark:text-slate-400 transition-transform ${sections.about ? 'rotate-180' : ''}`} />
         </button>
-        
+
         {sections.about && (
           <div className="border-t border-slate-200 dark:border-slate-800 p-5 space-y-4 animate-in fade-in duration-300">
             <div>
@@ -139,14 +253,14 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
               </div>
             </div>
 
-            <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
-              <div>
+            <div className="grid grid-cols-2 space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <div className='text-center'>
                 <p className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">👨‍💻 Created By</p>
                 <p className="text-sm text-slate-900 dark:text-white font-semibold">Agus Astroboy</p>
               </div>
-              <div>
+              <div className='text-center'>
                 <p className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">🙏 Thanks to Support</p>
-                <p className="text-sm text-slate-900 dark:text-white font-semibold">Adot & Meansrev</p>
+                <p className="text-sm text-slate-900 dark:text-white font-semibold">_dunckles & Meansrev</p>
               </div>
             </div>
           </div>
@@ -165,7 +279,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
           </div>
           <ChevronDown size={20} className={`text-slate-600 dark:text-slate-400 transition-transform ${sections.guide ? 'rotate-180' : ''}`} />
         </button>
-        
+
         {sections.guide && (
           <div className="border-t border-slate-200 dark:border-slate-800 p-5 space-y-5 animate-in fade-in duration-300">
             <div>
@@ -239,7 +353,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
           </div>
           <ChevronDown size={20} className={`text-slate-600 dark:text-slate-400 transition-transform ${sections.devMode ? 'rotate-180' : ''}`} />
         </button>
-        
+
         {sections.devMode && (
           <div className="border-t border-slate-200 dark:border-slate-800 p-5 space-y-3 animate-in fade-in duration-300">
             <div className="flex items-center justify-between p-4 bg-slate-100 dark:bg-slate-900/50 rounded-xl">
@@ -254,11 +368,11 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
                 <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${devModeOpen ? 'translate-x-7' : 'translate-x-0'}`}></div>
               </button>
             </div>
-            
+
             {devModeOpen && (
               <div className="space-y-3 animate-in fade-in duration-300">
-                <button 
-                  onClick={() => loadDummyData(setLoading)} 
+                <button
+                  onClick={() => loadDummyData(setLoading)}
                   disabled={loading}
                   className="w-full bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/60 border border-blue-300 dark:border-blue-800 text-slate-900 dark:text-white p-4 rounded-xl flex items-center gap-3 transition-all active:scale-95 disabled:opacity-50"
                 >
@@ -269,8 +383,8 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
                   </div>
                 </button>
 
-                <button 
-                  onClick={() => loadDefaultCategories(setLoading)} 
+                <button
+                  onClick={() => loadDefaultCategories(setLoading)}
                   disabled={loading}
                   className="w-full bg-emerald-100 dark:bg-emerald-900/40 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800 text-slate-900 dark:text-white p-4 rounded-xl flex items-center gap-3 transition-all active:scale-95 disabled:opacity-50"
                 >
@@ -281,8 +395,8 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
                   </div>
                 </button>
 
-                <button 
-                  onClick={() => monthlyRollover(wallets, budgets, transactions, user, setLoading)} 
+                <button
+                  onClick={() => monthlyRollover(wallets, budgets, transactions, user, setLoading)}
                   disabled={loading}
                   className="w-full bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 dark:hover:bg-purple-900/60 border border-purple-300 dark:border-purple-800 text-slate-900 dark:text-white p-4 rounded-xl flex items-center gap-3 transition-all active:scale-95 disabled:opacity-50"
                 >
@@ -293,8 +407,8 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
                   </div>
                 </button>
 
-                <button 
-                  onClick={() => clearTransactions(transactions, setLoading)} 
+                <button
+                  onClick={() => clearTransactions(transactions, setLoading)}
                   disabled={loading}
                   className="w-full bg-orange-100 dark:bg-orange-900/40 hover:bg-orange-200 dark:hover:bg-orange-900/60 border border-orange-300 dark:border-orange-800 text-slate-900 dark:text-white p-4 rounded-xl flex items-center gap-3 transition-all active:scale-95 disabled:opacity-50"
                 >
@@ -305,8 +419,8 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
                   </div>
                 </button>
 
-                <button 
-                  onClick={() => resetFactory(wallets, budgets, transactions, setLoading)} 
+                <button
+                  onClick={() => resetFactory(wallets, budgets, transactions, setLoading)}
                   disabled={loading}
                   className="w-full bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 border border-red-300 dark:border-red-800 text-slate-900 dark:text-white p-4 rounded-xl flex items-center gap-3 transition-all active:scale-95 disabled:opacity-50"
                 >
@@ -352,7 +466,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
           </div>
           <ChevronDown size={20} className={`text-slate-600 dark:text-slate-400 transition-transform ${sections.appInfo ? 'rotate-180' : ''}`} />
         </button>
-        
+
         {sections.appInfo && (
           <div className="border-t border-slate-200 dark:border-slate-800 p-5 space-y-3 animate-in fade-in duration-300">
             <div className="grid grid-cols-2 gap-4">
@@ -376,7 +490,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
 
             <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
               <p className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase mb-3">Kategori Default</p>
-              
+
               <div className="space-y-2 text-xs">
                 <div>
                   <p className="font-semibold text-slate-900 dark:text-white mb-1">👛 Wallets</p>
@@ -404,7 +518,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
           <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in zoom-in-95 transition-colors duration-300 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">🔐 Masukkan PIN</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">PIN diperlukan untuk {attemptedDevMode ? 'mengaktifkan' : 'menonaktifkan'} Developer Mode</p>
-            
+
             <input
               type="password"
               inputMode="numeric"
@@ -416,7 +530,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
               className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 p-4 rounded-xl text-center text-2xl font-bold tracking-widest text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition-colors duration-300 mb-4"
               autoFocus
             />
-            
+
             <div className="flex gap-2">
               <button
                 onClick={() => {
