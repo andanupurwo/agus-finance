@@ -286,47 +286,6 @@ export const Activity = ({ transactions, wallets, budgets, handleDeleteTransacti
                  />
                </div>
 
-               {/* Date */}
-               <div>
-                 <label className="text-xs text-slate-600 dark:text-slate-400 block mb-1">Tanggal</label>
-                 <input 
-                   type="date" 
-                   value={editData.transactionDate} 
-                   onChange={(e) => setEditData({...editData, transactionDate: e.target.value})}
-                   min={getMonthRange().min}
-                   max={getMonthRange().max}
-                   className="w-full appearance-none bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 p-3 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-600 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition-colors duration-300" 
-                 />
-               </div>
-
-               {/* Target */}
-               <div>
-                 <label className="text-xs text-slate-600 dark:text-slate-500 block mb-1">Tujuan</label>
-                 <select 
-                   value={editData.selectedTarget} 
-                   onChange={(e) => {
-                     const targetId = e.target.value;
-                     let targetName = '';
-                     if (editingTransaction.type === 'income') {
-                       const w = wallets.find(x => x.id === targetId);
-                       targetName = w?.name || '';
-                     } else {
-                       const b = budgets.find(x => x.id === targetId);
-                       targetName = b?.name || '';
-                     }
-                     setEditData({...editData, selectedTarget: targetId, targetName});
-                   }} 
-                   className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 p-3 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-500 focus:border-blue-500 dark:focus:border-blue-500 outline-none transition-colors duration-300"
-                 >
-                   <option value="">Pilih Tujuan</option>
-                   {editingTransaction.type === 'income' ? (
-                     wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)
-                   ) : (
-                     budgets.map(b => <option key={b.id} value={b.id}>{b.name}</option>)
-                   )}
-                 </select>
-               </div>
-
                {/* Action Buttons */}
                <div className="flex gap-2 pt-2">
                  <button 
@@ -340,7 +299,7 @@ export const Activity = ({ transactions, wallets, budgets, handleDeleteTransacti
                      handleEditTransaction(editingTransaction, editData, wallets, budgets, setLoading);
                      setEditingTransaction(null);
                    }}
-                   disabled={!editData.nominal || !editData.selectedTarget}
+                   disabled={!editData.nominal}
                    className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-all disabled:opacity-50"
                  >
                    Simpan

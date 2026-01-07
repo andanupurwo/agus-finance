@@ -3,18 +3,18 @@ import { X } from 'lucide-react';
 import { useTransactions } from '../hooks/useTransactions';
 
 const WALLET_COLORS = [
-  { name: 'Merah', value: 'from-red-800 to-red-900 border-red-700' },
-  { name: 'Merah-Ungu', value: 'from-rose-800 to-rose-900 border-rose-700' },
-  { name: 'Ungu', value: 'from-purple-800 to-purple-900 border-purple-700' },
-  { name: 'Biru-Ungu', value: 'from-indigo-800 to-indigo-900 border-indigo-700' },
-  { name: 'Biru', value: 'from-blue-800 to-blue-900 border-blue-700' },
-  { name: 'Biru-Hijau', value: 'from-cyan-800 to-cyan-900 border-cyan-700' },
-  { name: 'Hijau', value: 'from-emerald-800 to-emerald-900 border-emerald-700' },
-  { name: 'Hijau-Kuning', value: 'from-lime-800 to-lime-900 border-lime-700' },
-  { name: 'Kuning', value: 'from-yellow-700 to-yellow-900 border-yellow-700' },
-  { name: 'Kuning-Oranye', value: 'from-amber-700 to-amber-900 border-amber-700' },
-  { name: 'Oranye', value: 'from-orange-700 to-orange-900 border-orange-700' },
-  { name: 'Merah-Oranye', value: 'from-orange-800 to-red-900 border-orange-700' }
+  { name: 'Merah', value: '#FF0000', rgbValue: 'rgb(255, 0, 0)' },
+  { name: 'Magenta', value: '#C00080', rgbValue: 'rgb(192, 0, 128)' },
+  { name: 'Ungu', value: '#8000C0', rgbValue: 'rgb(128, 0, 192)' },
+  { name: 'Biru-Ungu', value: '#4B00B5', rgbValue: 'rgb(75, 0, 181)' },
+  { name: 'Biru', value: '#0066FF', rgbValue: 'rgb(0, 102, 255)' },
+  { name: 'Toska', value: '#00B5B5', rgbValue: 'rgb(0, 181, 181)' },
+  { name: 'Hijau', value: '#00A000', rgbValue: 'rgb(0, 160, 0)' },
+  { name: 'Hijau-Kuning', value: '#80D000', rgbValue: 'rgb(128, 208, 0)' },
+  { name: 'Kuning-Oranye', value: '#FFCC00', rgbValue: 'rgb(255, 204, 0)' },
+  { name: 'Oranye', value: '#FF9900', rgbValue: 'rgb(255, 153, 0)' },
+  { name: 'Oranye-Merah', value: '#FF5500', rgbValue: 'rgb(255, 85, 0)' },
+  { name: 'Hitam', value: '#000000', rgbValue: 'rgb(0, 0, 0)' }
 ];
 
 export const Modal = ({
@@ -104,7 +104,8 @@ export const Modal = ({
                     <button
                       key={color.value}
                       onClick={() => setEditingData({...editingData, color: color.value})}
-                      className={`w-full h-10 rounded-lg bg-gradient-to-br ${color.value} transition-all ${editingData.color === color.value ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-slate-900' : 'opacity-70 hover:opacity-100'}`}
+                      style={{ backgroundColor: color.value }}
+                      className={`w-full h-10 rounded-lg transition-all ${editingData.color === color.value ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-slate-900' : 'opacity-70 hover:opacity-100'}`}
                       title={color.name}
                     />
                   ))}
@@ -125,14 +126,15 @@ export const Modal = ({
                     <button
                       key={color.value}
                       onClick={() => setNewData({...newData, color: color.value})}
-                      className={`w-full h-10 rounded-lg bg-gradient-to-br ${color.value} transition-all ${newData.color === color.value ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-slate-900' : 'opacity-70 hover:opacity-100'}`}
+                      style={{ backgroundColor: color.value }}
+                      className={`w-full h-10 rounded-lg transition-all ${newData.color === color.value ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-slate-900' : 'opacity-70 hover:opacity-100'}`}
                       title={color.name}
                     />
                   ))}
                 </div>
               </div>
             )}
-            <button onClick={() => handleCreate(showModal, newData, setShowModal, setNewData, setLoading)} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-500 py-3 rounded-xl font-bold text-white mt-2 transition-all disabled:opacity-50">Simpan</button>
+            <button onClick={() => handleCreate(showModal, newData, setShowModal, setNewData, setLoading, wallets, budgets)} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-500 py-3 rounded-xl font-bold text-white mt-2 transition-all disabled:opacity-50">Simpan</button>
           </div>
         )}
       </div>

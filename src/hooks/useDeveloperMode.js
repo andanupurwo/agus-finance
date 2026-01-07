@@ -11,7 +11,7 @@ export const useDeveloperMode = (showToast, showConfirm) => {
       const batch = writeBatch(db);
       
       // WALLETS - 4 diversifikasi
-      const wallet1Ref = doc(collection(db, "wallets"));
+        const wallet1Ref = doc(collection(db, "wallets"));
       batch.set(wallet1Ref, {
         name: "Bank Muamalat",
         description: "Tabungan Utama Keluarga",
@@ -120,10 +120,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💰 Gaji Desember",
         amount: formatRupiah(14000000),
         type: "income",
-        user: "Suami",
+        user: "Purwo",
         time: "08:00",
         date: "2025-12-01",
-        target: "Bank Muamalat",
+          target: "Bank Muamalat",
+        targetId: wallet1Ref.id,
+        targetType: 'wallet',
         createdAt: new Date("2025-12-01T08:00:00").getTime()
       });
 
@@ -132,10 +134,14 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🔄 Setup Budget Makan Des",
         amount: formatRupiah(2500000),
         type: "transfer",
-        user: "Suami",
+        user: "Purwo",
         time: "09:00",
         date: "2025-12-01",
-        target: "Bank Muamalat -> Makan & Minum",
+          target: "Bank Muamalat -> Makan & Minum",
+        fromId: wallet1Ref.id,
+        toId: budget1Ref.id,
+        fromType: 'wallet',
+        toType: 'budget',
         createdAt: new Date("2025-12-01T09:00:00").getTime()
       });
 
@@ -144,10 +150,14 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🔄 Setup Budget Transport Des",
         amount: formatRupiah(1000000),
         type: "transfer",
-        user: "Suami",
+        user: "Purwo",
         time: "09:15",
         date: "2025-12-01",
-        target: "Bank Muamalat -> Transportasi",
+          target: "Bank Muamalat -> Transportasi",
+        fromId: wallet1Ref.id,
+        toId: budget2Ref.id,
+        fromType: 'wallet',
+        toType: 'budget',
         createdAt: new Date("2025-12-01T09:15:00").getTime()
       });
 
@@ -156,10 +166,14 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🔄 Setup Budget RT Des",
         amount: formatRupiah(1800000),
         type: "transfer",
-        user: "Istri",
+        user: "Ashri",
         time: "09:30",
         date: "2025-12-01",
-        target: "Bank Muamalat -> Rumah Tangga",
+          target: "Bank Muamalat -> Rumah Tangga",
+        fromId: wallet1Ref.id,
+        toId: budget3Ref.id,
+        fromType: 'wallet',
+        toType: 'budget',
         createdAt: new Date("2025-12-01T09:30:00").getTime()
       });
 
@@ -168,10 +182,14 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🔄 Setup Budget Anak Des",
         amount: formatRupiah(1200000),
         type: "transfer",
-        user: "Istri",
+        user: "Ashri",
         time: "09:45",
         date: "2025-12-01",
-        target: "Bank Muamalat -> Anak",
+          target: "Bank Muamalat -> Anak",
+        fromId: wallet1Ref.id,
+        toId: budget4Ref.id,
+        fromType: 'wallet',
+        toType: 'budget',
         createdAt: new Date("2025-12-01T09:45:00").getTime()
       });
 
@@ -180,10 +198,14 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🔄 Setup Budget Hiburan Des",
         amount: formatRupiah(700000),
         type: "transfer",
-        user: "Suami",
+        user: "Purwo",
         time: "10:00",
         date: "2025-12-01",
-        target: "Bank Muamalat -> Hiburan",
+          target: "Bank Muamalat -> Hiburan",
+        fromId: wallet1Ref.id,
+        toId: budget5Ref.id,
+        fromType: 'wallet',
+        toType: 'budget',
         createdAt: new Date("2025-12-01T10:00:00").getTime()
       });
 
@@ -193,10 +215,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🍜 Belanja Bulanan",
         amount: formatRupiah(800000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "10:00",
         date: "2025-12-05",
-        target: "Makan & Minum",
+          target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2025-12-05T10:00:00").getTime()
       });
 
@@ -205,10 +229,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "⛽ Bensin Motor & Mobil",
         amount: formatRupiah(400000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "14:00",
         date: "2025-12-07",
-        target: "Transportasi",
+          target: "Transportasi",
+        targetId: budget2Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2025-12-07T14:00:00").getTime()
       });
 
@@ -217,10 +243,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💡 Bayar Listrik Des",
         amount: formatRupiah(650000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "11:00",
         date: "2025-12-10",
-        target: "Rumah Tangga",
+          target: "Rumah Tangga",
+        targetId: budget3Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2025-12-10T11:00:00").getTime()
       });
 
@@ -229,10 +257,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🍼 Popok & Susu",
         amount: formatRupiah(450000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "15:00",
         date: "2025-12-12",
-        target: "Anak",
+          target: "Anak",
+        targetId: budget4Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2025-12-12T15:00:00").getTime()
       });
 
@@ -241,10 +271,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🍕 Makan Keluarga",
         amount: formatRupiah(350000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "19:00",
         date: "2025-12-15",
-        target: "Makan & Minum",
+          target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2025-12-15T19:00:00").getTime()
       });
 
@@ -253,10 +285,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🚗 Service Rutin",
         amount: formatRupiah(300000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "10:00",
         date: "2025-12-18",
-        target: "Transportasi",
+          target: "Transportasi",
+        targetId: budget2Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2025-12-18T10:00:00").getTime()
       });
 
@@ -265,10 +299,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🌐 Internet Des",
         amount: formatRupiah(400000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "16:00",
         date: "2025-12-20",
-        target: "Rumah Tangga",
+          target: "Rumah Tangga",
+        targetId: budget3Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2025-12-20T16:00:00").getTime()
       });
 
@@ -277,10 +313,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🎁 Kado Natal Anak",
         amount: formatRupiah(250000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "13:00",
         date: "2025-12-23",
-        target: "Anak",
+          target: "Anak",
+        targetId: budget4Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2025-12-23T13:00:00").getTime()
       });
 
@@ -289,10 +327,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🎄 Makan Natal",
         amount: formatRupiah(500000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "18:00",
         date: "2025-12-25",
-        target: "Makan & Minum",
+          target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2025-12-25T18:00:00").getTime()
       });
 
@@ -301,10 +341,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🎉 Nonton Bioskop",
         amount: formatRupiah(200000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "15:00",
         date: "2025-12-28",
         target: "Hiburan",
+        targetId: budget5Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2025-12-28T15:00:00").getTime()
       });
 
@@ -323,10 +365,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💰 Gaji Bulanan",
         amount: formatRupiah(15000000),
         type: "income",
-        user: "Suami",
+        user: "Purwo",
         time: "08:00",
         date: "2026-01-01",
         target: "Bank Muamalat",
+        targetId: wallet1Ref.id,
+        targetType: 'wallet',
         createdAt: new Date("2026-01-01T08:00:00").getTime()
       });
 
@@ -335,10 +379,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💵 Bonus Kinerja",
         amount: formatRupiah(5000000),
         type: "income",
-        user: "Suami",
+        user: "Purwo",
         time: "08:30",
         date: "2026-01-01",
         target: "Bank Muamalat",
+        targetId: wallet1Ref.id,
+        targetType: 'wallet',
         createdAt: new Date("2026-01-01T08:30:00").getTime()
       });
 
@@ -347,10 +393,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💎 Tarik Profit Emas",
         amount: formatRupiah(3000000),
         type: "income",
-        user: "Istri",
+        user: "Ashri",
         time: "09:00",
         date: "2026-01-01",
         target: "Emas Pegadaian",
+        targetId: wallet3Ref.id,
+        targetType: 'wallet',
         createdAt: new Date("2026-01-01T09:00:00").getTime()
       });
 
@@ -359,10 +407,14 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🔄 Alokasi Budget Makan",
         amount: formatRupiah(3000000),
         type: "transfer",
-        user: "Suami",
+        user: "Purwo",
         time: "10:00",
         date: "2026-01-01",
         target: "Bank Muamalat -> Makan & Minum",
+        fromId: wallet1Ref.id,
+        toId: budget1Ref.id,
+        fromType: 'wallet',
+        toType: 'budget',
         createdAt: new Date("2026-01-01T10:00:00").getTime()
       });
 
@@ -371,10 +423,14 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🔄 Alokasi Transportasi",
         amount: formatRupiah(1200000),
         type: "transfer",
-        user: "Suami",
+        user: "Purwo",
         time: "10:15",
         date: "2026-01-01",
         target: "Bank Muamalat -> Transportasi",
+        fromId: wallet1Ref.id,
+        toId: budget2Ref.id,
+        fromType: 'wallet',
+        toType: 'budget',
         createdAt: new Date("2026-01-01T10:15:00").getTime()
       });
 
@@ -383,10 +439,14 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🔄 Alokasi Rumah Tangga",
         amount: formatRupiah(2000000),
         type: "transfer",
-        user: "Istri",
+        user: "Ashri",
         time: "10:30",
         date: "2026-01-01",
         target: "Bank Muamalat -> Rumah Tangga",
+        fromId: wallet1Ref.id,
+        toId: budget3Ref.id,
+        fromType: 'wallet',
+        toType: 'budget',
         createdAt: new Date("2026-01-01T10:30:00").getTime()
       });
 
@@ -395,10 +455,14 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🔄 Alokasi Budget Anak",
         amount: formatRupiah(1500000),
         type: "transfer",
-        user: "Istri",
+        user: "Ashri",
         time: "10:45",
         date: "2026-01-01",
         target: "Bank Muamalat -> Anak",
+        fromId: wallet1Ref.id,
+        toId: budget4Ref.id,
+        fromType: 'wallet',
+        toType: 'budget',
         createdAt: new Date("2026-01-01T10:45:00").getTime()
       });
 
@@ -407,10 +471,14 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🔄 Alokasi Hiburan",
         amount: formatRupiah(800000),
         type: "transfer",
-        user: "Suami",
+        user: "Purwo",
         time: "11:00",
         date: "2026-01-01",
         target: "Bank Muamalat -> Hiburan",
+        fromId: wallet1Ref.id,
+        toId: budget5Ref.id,
+        fromType: 'wallets',
+        toType: 'budgets',
         createdAt: new Date("2026-01-01T11:00:00").getTime()
       });
 
@@ -419,10 +487,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💰 Top Up E-Wallet",
         amount: formatRupiah(1000000),
         type: "income",
-        user: "Suami",
+        user: "Purwo",
         time: "14:00",
         date: "2026-01-01",
         target: "E-Wallet",
+        targetId: wallet4Ref.id,
+        targetType: 'wallet',
         createdAt: new Date("2026-01-01T14:00:00").getTime()
       });
 
@@ -431,10 +501,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💰 Isi Cash Dompet",
         amount: formatRupiah(1500000),
         type: "income",
-        user: "Istri",
+        user: "Ashri",
         time: "15:00",
         date: "2026-01-01",
         target: "Dompet Cash",
+        targetId: wallet2Ref.id,
+        targetType: 'wallet',
         createdAt: new Date("2026-01-01T15:00:00").getTime()
       });
 
@@ -444,10 +516,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🍜 Sarapan Warteg",
         amount: formatRupiah(35000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "07:30",
         date: "2026-01-02",
         target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-02T07:30:00").getTime()
       });
 
@@ -456,10 +530,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "⛽ Isi Bensin Pertalite",
         amount: formatRupiah(200000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "08:00",
         date: "2026-01-02",
         target: "Transportasi",
+        targetId: budget2Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-02T08:00:00").getTime()
       });
 
@@ -468,10 +544,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🛒 Belanja Sayur Pasar",
         amount: formatRupiah(150000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "09:00",
         date: "2026-01-02",
         target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-02T09:00:00").getTime()
       });
 
@@ -480,10 +558,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🍼 Susu Formula Bayi",
         amount: formatRupiah(250000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "11:00",
         date: "2026-01-02",
         target: "Anak",
+        targetId: budget4Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-02T11:00:00").getTime()
       });
 
@@ -492,10 +572,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "☕ Kopi Siang",
         amount: formatRupiah(25000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "13:00",
         date: "2026-01-02",
         target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-02T13:00:00").getTime()
       });
 
@@ -504,10 +586,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💡 Token Listrik 100K",
         amount: formatRupiah(100000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "15:00",
         date: "2026-01-02",
         target: "Rumah Tangga",
+        targetId: budget3Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-02T15:00:00").getTime()
       });
 
@@ -516,10 +600,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🍕 Dinner Pizza",
         amount: formatRupiah(180000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "19:00",
         date: "2026-01-02",
         target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-02T19:00:00").getTime()
       });
 
@@ -529,10 +615,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🚗 Parkir Mall",
         amount: formatRupiah(15000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "10:00",
         date: "2026-01-03",
         target: "Transportasi",
+        targetId: budget2Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-03T10:00:00").getTime()
       });
 
@@ -541,10 +629,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🛍️ Belanja Popok",
         amount: formatRupiah(300000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "11:00",
         date: "2026-01-03",
         target: "Anak",
+        targetId: budget4Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-03T11:00:00").getTime()
       });
 
@@ -553,10 +643,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🍔 Makan KFC",
         amount: formatRupiah(120000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "12:30",
         date: "2026-01-03",
         target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-03T12:30:00").getTime()
       });
 
@@ -565,10 +657,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🧽 Sabun & Deterjen",
         amount: formatRupiah(85000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "14:00",
         date: "2026-01-03",
         target: "Rumah Tangga",
+        targetId: budget3Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-03T14:00:00").getTime()
       });
 
@@ -577,10 +671,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🎮 Bayar Netflix",
         amount: formatRupiah(50000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "16:00",
         date: "2026-01-03",
         target: "Hiburan",
+        targetId: budget5Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-03T16:00:00").getTime()
       });
 
@@ -589,10 +685,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💰 Freelance Project",
         amount: formatRupiah(2500000),
         type: "income",
-        user: "Suami",
+        user: "Purwo",
         time: "18:00",
         date: "2026-01-03",
         target: "Bank Muamalat",
+        targetId: wallet1Ref.id,
+        targetType: 'wallet',
         createdAt: new Date("2026-01-03T18:00:00").getTime()
       });
 
@@ -602,10 +700,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🥤 Beli Galon",
         amount: formatRupiah(25000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "08:00",
         date: "2026-01-04",
         target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-04T08:00:00").getTime()
       });
 
@@ -614,10 +714,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🚕 Grab ke Dokter",
         amount: formatRupiah(85000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "09:30",
         date: "2026-01-04",
         target: "Transportasi",
+        targetId: budget2Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-04T09:30:00").getTime()
       });
 
@@ -626,10 +728,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💊 Obat Batuk Anak",
         amount: formatRupiah(150000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "10:00",
         date: "2026-01-04",
         target: "Anak",
+        targetId: budget4Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-04T10:00:00").getTime()
       });
 
@@ -638,10 +742,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🍛 Catering Mingguan",
         amount: formatRupiah(400000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "12:00",
         date: "2026-01-04",
         target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-04T12:00:00").getTime()
       });
 
@@ -650,10 +756,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "📱 Pulsa & Paket Data",
         amount: formatRupiah(150000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "14:00",
         date: "2026-01-04",
         target: "Rumah Tangga",
+        targetId: budget3Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-04T14:00:00").getTime()
       });
 
@@ -662,10 +770,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "⛽ Isi Bensin Motor",
         amount: formatRupiah(50000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "17:00",
         date: "2026-01-04",
         target: "Transportasi",
+        targetId: budget2Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-04T17:00:00").getTime()
       });
 
@@ -675,10 +785,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🏪 Minimarket Snack",
         amount: formatRupiah(75000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "09:00",
         date: "2026-01-05",
         target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-05T09:00:00").getTime()
       });
 
@@ -687,10 +799,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💈 Potong Rambut",
         amount: formatRupiah(50000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "10:30",
         date: "2026-01-05",
         target: "Hiburan",
+        targetId: budget5Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-05T10:30:00").getTime()
       });
 
@@ -699,10 +813,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🧸 Mainan Anak",
         amount: formatRupiah(200000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "13:00",
         date: "2026-01-05",
         target: "Anak",
+        targetId: budget4Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-05T13:00:00").getTime()
       });
 
@@ -711,10 +827,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🌐 Bayar IndiHome",
         amount: formatRupiah(400000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "15:00",
         date: "2026-01-05",
         target: "Rumah Tangga",
+        targetId: budget3Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-05T15:00:00").getTime()
       });
 
@@ -723,10 +841,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🍜 Bakso Malam",
         amount: formatRupiah(60000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "19:00",
         date: "2026-01-05",
         target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-05T19:00:00").getTime()
       });
 
@@ -735,10 +855,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🚗 Service Motor",
         amount: formatRupiah(350000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "16:00",
         date: "2026-01-05",
         target: "Transportasi",
+        targetId: budget2Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-05T16:00:00").getTime()
       });
 
@@ -748,10 +870,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🍳 Telur & Roti",
         amount: formatRupiah(45000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "07:00",
         date: "2026-01-06",
         target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-06T07:00:00").getTime()
       });
 
@@ -760,10 +884,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🧴 Skincare Bayi",
         amount: formatRupiah(150000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "10:00",
         date: "2026-01-06",
         target: "Anak",
+        targetId: budget4Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-06T10:00:00").getTime()
       });
 
@@ -772,10 +898,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🚌 Ongkos Ojol",
         amount: formatRupiah(45000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "08:00",
         date: "2026-01-06",
         target: "Transportasi",
+        targetId: budget2Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-06T08:00:00").getTime()
       });
 
@@ -784,10 +912,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💡 Token Listrik 100K",
         amount: formatRupiah(100000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "12:00",
         date: "2026-01-06",
         target: "Rumah Tangga",
+        targetId: budget3Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-06T12:00:00").getTime()
       });
 
@@ -796,10 +926,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "🍕 Lunch Keluarga",
         amount: formatRupiah(250000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "13:30",
         date: "2026-01-06",
         target: "Makan & Minum",
+        targetId: budget1Ref.id,
+        targetType: 'budget',
         createdAt: new Date("2026-01-06T13:30:00").getTime()
       });
 
@@ -808,10 +940,12 @@ export const useDeveloperMode = (showToast, showConfirm) => {
         title: "💰 Jual Barang Bekas",
         amount: formatRupiah(500000),
         type: "income",
-        user: "Istri",
+        user: "Ashri",
         time: "15:00",
         date: "2026-01-06",
         target: "Dompet Cash",
+        targetId: wallet2Ref.id,
+        targetType: 'wallet',
         createdAt: new Date("2026-01-06T15:00:00").getTime()
       });
 

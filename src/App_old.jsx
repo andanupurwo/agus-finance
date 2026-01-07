@@ -84,7 +84,7 @@ export default function App() {
         title: description || (type === 'income' ? 'Pemasukan' : 'Pengeluaran'),
         amount: nominal,
         type: type,
-        user: user === 'S' ? 'Suami' : 'Istri',
+        user: user === 'S' ? 'Purwo' : 'Ashri',
         time: timeNow,
         target: targetName,
         createdAt: Date.now()
@@ -144,7 +144,7 @@ export default function App() {
         title: "Alokasi Dana",
         amount: amount,
         type: 'transfer',
-        user: user === 'S' ? 'Suami' : 'Istri',
+        user: user === 'S' ? 'Purwo' : 'Ashri',
         time: new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}),
         target: `${sourceData.name} -> ${destData.name}`,
         createdAt: Date.now()
@@ -252,7 +252,7 @@ export default function App() {
         title: "Gaji Bulan Ini",
         amount: formatRupiah(10000000),
         type: "income",
-        user: "Suami",
+        user: "Purwo",
         time: "09:00",
         target: "Bank BCA",
         createdAt: Date.now() - 5000
@@ -263,7 +263,7 @@ export default function App() {
         title: "Beli Bensin",
         amount: formatRupiah(150000),
         type: "expense",
-        user: "Istri",
+        user: "Ashri",
         time: "14:30",
         target: "Transport",
         createdAt: Date.now() - 4000
@@ -274,7 +274,7 @@ export default function App() {
         title: "Makan Siang",
         amount: formatRupiah(50000),
         type: "expense",
-        user: "Suami",
+        user: "Purwo",
         time: "12:15",
         target: "Makan & Minum",
         createdAt: Date.now() - 3000

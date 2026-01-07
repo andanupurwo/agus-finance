@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Wallet, Plus, EyeOff, Trash2, Edit2 } from 'lucide-react';
 import { ArrowRightLeft } from 'lucide-react';
 import { parseRupiah, formatRupiah } from '../utils/formatter';
@@ -6,6 +6,7 @@ import { parseRupiah, formatRupiah } from '../utils/formatter';
 export const Manage = ({
   wallets,
   budgets,
+  transactions,
   showBalance,
   setShowBalance,
   totalNetWorth,
@@ -18,6 +19,70 @@ export const Manage = ({
   isReadOnly,
   setEditingData
 }) => {
+  const [orderedWallets, setOrderedWallets] = useState(wallets);
+  const [orderedBudgets, setOrderedBudgets] = useState(budgets);
+  const [draggedId, setDraggedId] = useState(null);
+
+  // Sync wallets & budgets ke ordered state saat berubah
+  React.useEffect(() => {
+    setOrderedWallets(wallets);
+  }, [wallets]);
+
+  React.useEffect(() => {
+    setOrderedBudgets(budgets);
+  }, [budgets]);
+
+  const handleDragStart = (e, id) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDropWallets = (e, targetId) => {
+    e.preventDefault();
+    if (draggedId === targetId) {
+      setDraggedId(null);
+      return;
+    }
+
+    const draggedIdx = orderedWallets.findIndex(w => w.id === draggedId);
+    const targetIdx = orderedWallets.findIndex(w => w.id === targetId);
+
+    if (draggedIdx !== -1 && targetIdx !== -1) {
+      const newOrder = [...orderedWallets];
+      [newOrder[draggedIdx], newOrder[targetIdx]] = [newOrder[targetIdx], newOrder[draggedIdx]];
+      setOrderedWallets(newOrder);
+      localStorage.setItem('walletOrder', JSON.stringify(newOrder.map(w => w.id)));
+    }
+    setDraggedId(null);
+  };
+
+  const handleDropBudgets = (e, targetId) => {
+    e.preventDefault();
+    if (draggedId === targetId) {
+      setDraggedId(null);
+      return;
+    }
+
+    const draggedIdx = orderedBudgets.findIndex(b => b.id === draggedId);
+    const targetIdx = orderedBudgets.findIndex(b => b.id === targetId);
+
+    if (draggedIdx !== -1 && targetIdx !== -1) {
+      const newOrder = [...orderedBudgets];
+      [newOrder[draggedIdx], newOrder[targetIdx]] = [newOrder[targetIdx], newOrder[draggedIdx]];
+      setOrderedBudgets(newOrder);
+      localStorage.setItem('budgetOrder', JSON.stringify(newOrder.map(b => b.id)));
+    }
+    setDraggedId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20 px-1.5">
@@ -49,8 +114,22 @@ export const Manage = ({
           <div className="p-4 text-center text-slate-500 dark:text-slate-400 text-xs border border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-100 dark:bg-slate-900/40 transition-colors duration-300">Belum ada wallet</div>
         ) : (
           <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide snap-x">
-            {wallets.map((w) => (
-              <div key={w.id} className={`relative snap-center flex-shrink-0 w-64 h-40 rounded-3xl bg-gradient-to-br ${w.color} p-5 text-white shadow-xl border overflow-hidden`}>
+            {orderedWallets.map((w) => {
+              // Check if color is hex (new format) or gradient (old format)
+              const isHex = w.color && w.color.startsWith('#');
+              const walletStyle = isHex ? { backgroundColor: w.color } : {};
+              const walletClass = isHex ? '' : `bg-gradient-to-br ${w.color}`;
+              
+              return (
+              <div 
+                key={w.id} 
+                draggable
+                onDragStart={(e) => handleDragStart(e, w.id)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDropWallets(e, w.id)}
+                onDragEnd={handleDragEnd}
+                className={`relative snap-center flex-shrink-0 w-64 h-40 rounded-3xl ${walletClass} p-5 text-white shadow-xl border overflow-hidden transition-opacity duration-300 cursor-grab active:cursor-grabbing ${draggedId === w.id ? 'opacity-50' : ''}`} 
+                style={isHex ? walletStyle : {}}>
                 <div className="flex flex-col justify-between h-full relative z-10">
                   <div className="flex justify-between">
                       <Wallet size={24} />
@@ -69,7 +148,8 @@ export const Manage = ({
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>
@@ -84,8 +164,17 @@ export const Manage = ({
            <div className="p-4 text-center text-slate-500 dark:text-slate-400 text-xs border border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-100 dark:bg-slate-900/40 transition-colors duration-300">Belum ada budget</div>
          ) : (
            <div className="space-y-3">
-             {budgets.map((b) => {
-               const used = parseRupiah(b.limit) - parseRupiah(b.amount);
+             {orderedBudgets.map((b) => {
+               // Hitung total pengeluaran dari transaksi yang menargetkan budget ini
+               const expenseTransactions = transactions.filter(t => 
+                 t.type === 'expense' && t.targetId === b.id
+               );
+               const totalExpense = expenseTransactions.reduce((sum, t) => 
+                 sum + parseRupiah(t.amount), 0
+               );
+               
+               const used = totalExpense; // Terpakai = total semua expense transaksi
+               const available = parseRupiah(b.limit) - used; // Tersedia = Limit - Terpakai
                const usagePercent = parseRupiah(b.limit) > 0 ? (used / parseRupiah(b.limit)) * 100 : 0;
                
                // Traffic Light Logic
@@ -112,7 +201,14 @@ export const Manage = ({
                }
                
                return (
-                 <div key={b.id} className={`relative p-4 rounded-2xl border ${cardColor} transition-colors duration-300`}>
+                 <div 
+                   key={b.id} 
+                   draggable
+                   onDragStart={(e) => handleDragStart(e, b.id)}
+                   onDragOver={handleDragOver}
+                   onDrop={(e) => handleDropBudgets(e, b.id)}
+                   onDragEnd={handleDragEnd}
+                   className={`relative p-4 rounded-2xl border ${cardColor} transition-all duration-300 cursor-grab active:cursor-grabbing ${draggedId === b.id ? 'opacity-50' : ''}`}>
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1 min-w-0">
                         <h4 className={`font-bold text-sm truncate ${textColor}`}>{b.name}</h4>
@@ -134,7 +230,7 @@ export const Manage = ({
                     <div className="grid grid-cols-3 gap-2 mb-3">
                       <div>
                         <span className={`text-[9px] ${labelColor} block`}>Tersedia</span>
-                        <span className={`text-sm font-bold block truncate ${textColor}`}>Rp {b.amount}</span>
+                        <span className={`text-sm font-bold block truncate ${textColor}`}>Rp {formatRupiah(available)}</span>
                       </div>
                       {parseRupiah(b.limit) > 0 && (
                         <>

@@ -6,6 +6,7 @@ import { Home } from './pages/Home';
 import { Activity } from './pages/Activity';
 import { Manage } from './pages/Manage';
 import { Settings } from './pages/Settings';
+import { ClearCache } from './pages/ClearCache';
 import { BottomNav } from './components/BottomNav';
 import { Modal } from './components/Modal';
 import { Header } from './components/Header';
@@ -16,8 +17,8 @@ import { useTheme } from './context/ThemeContext';
 import { formatRupiah, parseRupiah } from './utils/formatter';
 
 const MAGIC_CODES = {
-  andanupurwo: 'Purwo',
-  ashrinurhida: 'Ashri',
+  '081111': 'Purwo',
+  '140222': 'Ashri',
   demo: 'Demo'
 };
 
@@ -29,6 +30,46 @@ export default function App() {
   const [demoEnabled, setDemoEnabled] = useState(() => localStorage.getItem('demoEnabled') !== 'false');
   const [showBalance, setShowBalance] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  // Check if URL has ?clear=1 to trigger cache clear
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('clear') === '1') {
+      // Redirect to ClearCache component
+      window.location.href = '/';
+      localStorage.clear();
+      sessionStorage.clear();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(registration => registration.unregister());
+        });
+      }
+    }
+  }, []);
+
+  // Listen for PIN change events (cross-tab communication)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'PIN_CHANGED_EVENT' && e.newValue) {
+        try {
+          const event = JSON.parse(e.newValue);
+          // If PIN changed for a different user, logout current user
+          if (event.user !== user) {
+            showToast(`🔐 Kode sakti telah diubah oleh ${event.user}. Anda akan logout.`, 'warning');
+            setTimeout(() => {
+              setUser(null);
+              setMagicCode('');
+            }, 2000);
+          }
+        } catch (err) {
+          console.error('Failed to parse PIN_CHANGED_EVENT', err);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [user]);
 
   // --- DATA STATE ---
   const [wallets, setWallets] = useState([]);
@@ -72,6 +113,9 @@ export default function App() {
       showToast('Masukkan kode sakti', 'error');
       return;
     }
+    // Debug: log available codes
+    console.log('Available codes:', Object.keys(MAGIC_CODES));
+    console.log('Input:', trimmed);
     const found = MAGIC_CODES[trimmed];
     if (!found) {
       showToast('Kode sakti salah', 'error');
@@ -137,6 +181,18 @@ export default function App() {
       const lastRollover = localStorage.getItem('lastRolloverDate');
       const today = new Date();
       const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+      // Hanya lakukan rollover jika ada transaksi di bulan sebelum bulan ini
+      const hasPreviousMonthTx = transactions.some((t) => {
+        const dt = new Date(t.date);
+        if (Number.isNaN(dt.getTime())) return false;
+        return (
+          dt.getFullYear() < today.getFullYear() ||
+          (dt.getFullYear() === today.getFullYear() && dt.getMonth() < today.getMonth())
+        );
+      });
+
+      if (!hasPreviousMonthTx) return;
       
       // Jika belum pernah rollover atau bulan berbeda
       if (!lastRollover || !lastRollover.startsWith(currentMonth)) {
@@ -156,9 +212,21 @@ export default function App() {
     };
     
     checkAndRollover();
-  }, [wallets, budgets]);
+  }, [wallets, budgets, transactions]);
 
-  const totalNetWorth = [...wallets, ...budgets].reduce((acc, item) => acc + parseRupiah(item.amount), 0);
+  // Hitung Total Uang = Total Wallet + Total Budget yang Tersedia
+  const walletTotal = wallets.reduce((acc, w) => acc + parseRupiah(w.amount), 0);
+  const budgetTotal = budgets.reduce((acc, b) => {
+    const expenseTransactions = transactions.filter(t => 
+      t.type === 'expense' && t.targetId === b.id
+    );
+    const totalExpense = expenseTransactions.reduce((sum, t) => 
+      sum + parseRupiah(t.amount), 0
+    );
+    const available = parseRupiah(b.limit) - totalExpense;
+    return acc + available;
+  }, 0);
+  const totalNetWorth = walletTotal + budgetTotal;
 
   const renderContent = () => {
     switch (activeTab) {
@@ -206,6 +274,7 @@ export default function App() {
           <Manage
             wallets={wallets}
             budgets={budgets}
+            transactions={transactions}
             showBalance={showBalance}
             setShowBalance={setShowBalance}
             totalNetWorth={totalNetWorth}
@@ -228,6 +297,7 @@ export default function App() {
             setLoading={setLoading}
             loading={loading}
             user={user}
+            setUser={setUser}
             showToast={showToast}
             showConfirm={showConfirm}
             demoEnabled={demoEnabled}
@@ -279,6 +349,21 @@ export default function App() {
                 className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-600/40 dark:shadow-blue-900/40 active:scale-95 transition-all"
               >
                 Masuk
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                      registrations.forEach(registration => registration.unregister());
+                    });
+                  }
+                  setTimeout(() => window.location.reload(), 500);
+                }}
+                className="w-full py-2 rounded-xl bg-slate-400 hover:bg-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-semibold text-xs transition-all"
+              >
+                Bersihkan Cache
               </button>
             </div>
         </div>

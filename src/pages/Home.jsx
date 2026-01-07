@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowDownCircle, ArrowUpCircle, ArrowDownRight, ArrowUpRight, ArrowRightLeft } from 'lucide-react';
 import { parseRupiah, formatRupiah, isCurrentMonth, getMonthRange } from '../utils/formatter';
 import { useTransactions } from '../hooks/useTransactions';
 import { Summary } from '../components/Summary';
@@ -28,6 +28,8 @@ export const Home = ({
   isReadOnly
 }) => {
   const { handleDailyTransaction, handleNominalInput } = useTransactions(showToast, showConfirm);
+  const [orderedBudgets, setOrderedBudgets] = useState(budgets);
+  const [draggedId, setDraggedId] = useState(null);
 
   const handleTransactionClick = (type) => {
     if (!nominal) {
@@ -44,9 +46,9 @@ export const Home = ({
 
   const handleDateChange = (e) => {
     const newDate = e.target.value;
+    // Cek apakah tanggal valid (hanya warning, tapi tetap izinkan input)
     if (!isCurrentMonth(newDate)) {
-      showToast?.('⚠️ Tanggal harus di bulan berjalan (bulan ini)', 'error');
-      return;
+      showToast?.('⚠️ Tanggal di luar bulan berjalan (transaksi akan ditolak saat proses)', 'warning');
     }
     setTransactionDate(newDate);
   };
@@ -68,7 +70,65 @@ export const Home = ({
       setSelectedTarget,
       setLoading
     );
+    // Reset form setelah transaksi
     setTransactionType(null);
+    setNominal('');
+    setDescription('');
+  };
+
+  // Sync budgets ke orderedBudgets saat budgets berubah
+  React.useEffect(() => {
+    // Jika ada saved order di localStorage, gunakan itu
+    const savedOrder = localStorage.getItem('budgetOrder');
+    if (savedOrder) {
+      try {
+        const orderIds = JSON.parse(savedOrder);
+        const ordered = orderIds
+          .map(id => budgets.find(b => b.id === id))
+          .filter(b => b !== undefined);
+        // Tambahkan yang tidak ada di order (budget baru)
+        const missing = budgets.filter(b => !ordered.some(o => o.id === b.id));
+        setOrderedBudgets([...ordered, ...missing]);
+      } catch (e) {
+        // Jika parsing gagal, gunakan urutan normal
+        setOrderedBudgets(budgets);
+      }
+    } else {
+      setOrderedBudgets(budgets);
+    }
+  }, [budgets]);
+
+  const handleDragStart = (e, id) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetId) => {
+    e.preventDefault();
+    if (draggedId === targetId) {
+      setDraggedId(null);
+      return;
+    }
+
+    const draggedIdx = orderedBudgets.findIndex(b => b.id === draggedId);
+    const targetIdx = orderedBudgets.findIndex(b => b.id === targetId);
+
+    if (draggedIdx !== -1 && targetIdx !== -1) {
+      const newOrder = [...orderedBudgets];
+      [newOrder[draggedIdx], newOrder[targetIdx]] = [newOrder[targetIdx], newOrder[draggedIdx]];
+      setOrderedBudgets(newOrder);
+      localStorage.setItem('budgetOrder', JSON.stringify(newOrder.map(b => b.id)));
+    }
+    setDraggedId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
   };
 
   return (
@@ -83,8 +143,15 @@ export const Home = ({
           <div className="p-3 text-center text-slate-500 dark:text-slate-400 text-xs border border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-100 dark:bg-slate-900/40 transition-colors duration-300">Belum ada budget. Buat di menu Manage.</div>
         ) : (
           <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar snap-x">
-            {budgets.map((b) => {
-              const used = parseRupiah(b.limit) - parseRupiah(b.amount);
+            {orderedBudgets.map((b) => {
+              // Hitung total pengeluaran dari transaksi yang menargetkan budget ini
+              const expenseTransactions = transactions.filter(t => 
+                t.type === 'expense' && t.targetId === b.id
+              );
+              const used = expenseTransactions.reduce((sum, t) => 
+                sum + parseRupiah(t.amount), 0
+              );
+              const available = parseRupiah(b.limit) - used; // Tersedia = Limit - Terpakai
               const usagePercent = parseRupiah(b.limit) > 0 ? (used / parseRupiah(b.limit)) * 100 : 0;
               let cardColor = "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800";
               let barColor = "bg-blue-500 dark:bg-blue-600";
@@ -104,12 +171,19 @@ export const Home = ({
               }
               
               return (
-                <div key={b.id} className={`min-w-[160px] sm:min-w-[180px] p-3 rounded-xl snap-center transition-colors duration-300 ${cardColor}`}>
+                <div 
+                  key={b.id} 
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, b.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, b.id)}
+                  onDragEnd={handleDragEnd}
+                  className={`min-w-[160px] sm:min-w-[180px] p-3 rounded-xl snap-center transition-all duration-300 cursor-grab active:cursor-grabbing ${cardColor} ${draggedId === b.id ? 'opacity-50' : ''}`}>
                   {/* Nama Kategori */}
                   <p className="text-xs font-bold text-slate-900 dark:text-white mb-2 leading-snug line-clamp-2">{b.name}</p>
                   
                   {/* Nominal Sisa */}
-                  <p className="text-sm font-bold text-slate-900 dark:text-white mb-2 leading-snug break-words">Rp {parseRupiah(b.amount).toLocaleString('id-ID')}</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white mb-2 leading-snug break-words">Rp {available.toLocaleString('id-ID')}</p>
                   
                   {/* Progress Bar */}
                   {parseRupiah(b.limit) > 0 && (
@@ -212,6 +286,60 @@ export const Home = ({
           </div>
         </div>
       )}
+
+      {/* RECENT TRANSACTIONS */}
+      <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm transition-colors duration-300">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">Transaksi Terbaru</h3>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400">5 terakhir</span>
+        </div>
+
+        {transactions.length === 0 ? (
+          <div className="p-4 text-center text-slate-500 dark:text-slate-400 text-xs border border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-100 dark:bg-slate-900/40 transition-colors duration-300">
+            Belum ada transaksi
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {[...transactions]
+              .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+              .slice(0, 5)
+              .map((t) => {
+                const iconWrap = t.type === 'income'
+                  ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-500'
+                  : t.type === 'expense'
+                  ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-500'
+                  : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-500';
+                const amountColor = t.type === 'income'
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : t.type === 'expense'
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-blue-600 dark:text-blue-400';
+                const sign = t.type === 'income' ? '+' : t.type === 'expense' ? '-' : '';
+                const time = t.time || (t.createdAt ? new Date(t.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '');
+                return (
+                  <div key={t.id} className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-colors duration-300">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${iconWrap}`}>
+                      {t.type === 'income' ? <ArrowDownRight size={16}/> : t.type === 'expense' ? <ArrowUpRight size={16}/> : <ArrowRightLeft size={16}/>}          
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">{t.title}</h4>
+                        <span className={`font-bold text-sm flex-shrink-0 ${amountColor}`}>
+                          {sign} Rp {t.amount}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-600 dark:text-slate-500">
+                        <span className="truncate">{t.target}</span>
+                        {time && (<><span>•</span><span>{time}</span></>)}
+                        {t.user && (<><span>•</span><span>{t.user}</span></>)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -26,3 +26,4 @@ dist-ssr
 .firebaserc
 firebase.json
 src/firebase.js
+public/test-import.xlsx
