@@ -85,7 +85,7 @@ export const Manage = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-20 px-1.5">
+    <div className="space-y-6 animate-in fade-in duration-500 px-1.5">
       {/* TOTAL WEALTH */}
       <div>
         <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Total Uang (Wallet + Sisa Budget)</p>

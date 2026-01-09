@@ -48,7 +48,7 @@ export const Modal = ({
   if (!showModal) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] bg-white/40 dark:bg-black/60 flex items-center justify-center p-4 backdrop-blur-md" onClick={() => setShowModal(null)}>
+    <div className="fixed inset-0 z-40 bg-white/40 dark:bg-black/60 flex items-center justify-center p-4 backdrop-blur-md" onClick={() => setShowModal(null)}>
       <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in zoom-in-95 transition-colors duration-300 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-bold text-slate-900 dark:text-white text-lg">

@@ -17,3 +17,19 @@ export const getMonthRange = () => {
     max: lastDay.toISOString().split('T')[0]
   };
 };
+
+export const getCurrentMonthKey = () => {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+};
+
+export const hasMonthlyResetOccurred = () => {
+  const currentMonth = getCurrentMonthKey();
+  const lastResetMonth = localStorage.getItem('lastBudgetResetMonth');
+  return lastResetMonth === currentMonth;
+};
+
+export const markMonthlyResetDone = () => {
+  const currentMonth = getCurrentMonthKey();
+  localStorage.setItem('lastBudgetResetMonth', currentMonth);
+};

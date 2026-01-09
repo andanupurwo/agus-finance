@@ -145,7 +145,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500 pb-20 px-1.5">
+    <div className="space-y-4 animate-in fade-in duration-500 px-1.5">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">Settings</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400">Kelola aplikasi dan panduan penggunaan</p>
@@ -625,7 +625,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
 
       {/* CHANGE PIN MODAL */}
       {showChangePinModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-white/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowChangePinModal(false)}>
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-white/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowChangePinModal(false)}>
           <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in zoom-in-95 transition-colors duration-300 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">🔐 Ganti Kode Sakti</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">Masukkan PIN lama dan PIN baru (6 digit)</p>
@@ -743,7 +743,7 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
 
       {/* PIN MODAL */}
       {showPinModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-white/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowPinModal(false)}>
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-white/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowPinModal(false)}>
           <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in zoom-in-95 transition-colors duration-300 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">🔐 Masukkan PIN</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">PIN diperlukan untuk {attemptedDevMode ? 'mengaktifkan' : 'menonaktifkan'} Developer Mode</p>

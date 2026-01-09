@@ -112,7 +112,7 @@ export const Activity = ({ transactions, wallets, budgets, handleDeleteTransacti
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500 pb-20 px-1.5">
+    <div className="space-y-4 animate-in fade-in duration-500 px-1.5">
        <div className="flex items-center justify-between gap-3">
          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Riwayat</h2>
          <div className="flex items-center gap-2">
@@ -250,7 +250,7 @@ export const Activity = ({ transactions, wallets, budgets, handleDeleteTransacti
 
        {/* EDIT MODAL */}
        {editingTransaction && editData && (
-         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-white/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setEditingTransaction(null)}>
+         <div className="fixed inset-0 z-40 flex items-center justify-center bg-white/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setEditingTransaction(null)}>
            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in zoom-in-95 transition-colors duration-300 shadow-2xl" onClick={(e) => e.stopPropagation()}>
              <div className="flex justify-between items-center mb-4">
                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Edit Transaksi</h3>

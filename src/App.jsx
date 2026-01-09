@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
-import { collection, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { Home as HomeIcon } from 'lucide-react';
 import { Home } from './pages/Home';
 import { Activity } from './pages/Activity';
@@ -14,7 +14,7 @@ import { Toast, ConfirmDialog } from './components/Toast';
 import { useTransactions } from './hooks/useTransactions';
 import { useDeveloperMode } from './hooks/useDeveloperMode';
 import { useTheme } from './context/ThemeContext';
-import { formatRupiah, parseRupiah } from './utils/formatter';
+import { formatRupiah, parseRupiah, hasMonthlyResetOccurred, markMonthlyResetDone } from './utils/formatter';
 
 const MAGIC_CODES = {
   '081111': 'Purwo',
@@ -172,6 +172,45 @@ export default function App() {
     });
     return () => { unsubW(); unsubB(); unsubT(); };
   }, []);
+
+  // AUTO MONTHLY BUDGET RESET - Set limit = amount (sisa bulan lalu)
+  useEffect(() => {
+    if (budgets.length === 0) return;
+
+    const triggerMonthlyReset = async () => {
+      // Cek apakah sudah di-trigger di bulan ini
+      if (hasMonthlyResetOccurred()) return;
+
+      try {
+        // Reset semua budget: limit = amount saat ini (dengan parallel updates)
+        const resetPromises = budgets.map(budget => {
+          const currentAmount = budget.amount || '0'; // Handle undefined/null
+          
+          // Validate amount adalah string format Rupiah
+          if (typeof currentAmount !== 'string') {
+            console.warn(`Budget ${budget.id} has invalid amount type:`, typeof currentAmount);
+            return Promise.resolve(); // Skip invalid budgets
+          }
+
+          return updateDoc(doc(db, "budgets", budget.id), {
+            limit: currentAmount
+          }).catch(e => {
+            console.error(`Failed to reset budget ${budget.id}:`, e);
+            // Continue with other budgets even if one fails
+          });
+        });
+
+        await Promise.all(resetPromises);
+        markMonthlyResetDone();
+        showToast('💫 Budget bulan ini sudah disiapkan! Limit diset dari sisa bulan lalu.', 'success');
+      } catch (e) {
+        console.error('Monthly budget reset error:', e);
+        showToast(`⚠️ Gagal menyiapkan budget: ${e.message}`, 'error');
+      }
+    };
+
+    triggerMonthlyReset();
+  }, [budgets, showToast]);
 
   // 2. AUTO ROLLOVER CHECK
   useEffect(() => {
@@ -422,7 +461,7 @@ export default function App() {
       {/* HEADER with Date */}
       <Header user={user} setUser={setUser} />
 
-      <main className="flex-1 pt-28 px-1.5 sm:px-3 pb-20 overflow-y-auto">{renderContent()}</main>
+      <main className="flex-1 mt-28 pt-2 px-1.5 sm:px-3 pb-24 overflow-y-auto">{renderContent()}</main>
 
       {/* BOTTOM NAV */}
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />

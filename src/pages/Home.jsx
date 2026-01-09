@@ -132,7 +132,7 @@ export const Home = ({
   };
 
   return (
-    <div className="space-y-3 animate-in fade-in duration-500 pb-20 px-1.5">
+    <div className="space-y-3 animate-in fade-in duration-500 px-1.5">
       {/* BUDGET LIST (HORIZONTAL) */}
       <div>
         <div className="flex justify-between items-end mb-2">
@@ -235,7 +235,7 @@ export const Home = ({
 
       {/* MODAL PILIH TARGET */}
       {showTargetModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-white/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300 px-4" onClick={() => setShowTargetModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300 px-4" onClick={() => setShowTargetModal(false)}>
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl p-6 animate-in zoom-in-95 duration-300 transition-colors shadow-2xl border border-slate-200 dark:border-slate-800" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">

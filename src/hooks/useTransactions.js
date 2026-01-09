@@ -430,6 +430,26 @@ export const useTransactions = (showToast, showConfirm) => {
     setLoading(false);
   };
 
+  const handleBudgetMonthlyReset = async (budgets) => {
+    if (!budgets || budgets.length === 0) return;
+
+    try {
+      // Reset setiap budget: set limit = amount saat itu (sisa bulan lalu)
+      const resetPromises = budgets.map(budget => {
+        const currentAmount = budget.amount;
+        return updateDoc(doc(db, "budgets", budget.id), {
+          limit: currentAmount
+        });
+      });
+
+      await Promise.all(resetPromises);
+      showToast?.("💫 Budget bulan ini sudah disiapkan! Limit diset dari sisa bulan lalu.", "success");
+    } catch (e) {
+      console.error('Budget monthly reset error:', e);
+      showToast?.(e.message, "error");
+    }
+  };
+
   return {
     handleDailyTransaction,
     handleTransfer,
@@ -438,6 +458,7 @@ export const useTransactions = (showToast, showConfirm) => {
     handleDelete,
     handleDeleteTransaction,
     handleEditTransaction,
-    handleNominalInput
+    handleNominalInput,
+    handleBudgetMonthlyReset
   };
 };
