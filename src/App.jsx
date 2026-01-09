@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db } from './firebase';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { Home as HomeIcon } from 'lucide-react';
@@ -15,7 +15,19 @@ import { useTransactions } from './hooks/useTransactions';
 import { useDeveloperMode } from './hooks/useDeveloperMode';
 import { useTheme } from './context/ThemeContext';
 import { formatRupiah, parseRupiah, hasMonthlyResetOccurred, markMonthlyResetDone } from './utils/formatter';
+import { 
+  validateMagicCode, 
+  checkLoginAttempts, 
+  recordLoginAttempt, 
+  clearLoginAttempts,
+  initSessionTimeout,
+  logSecurityEvent 
+} from './utils/security';
 
+// ⚠️ SECURITY: Magic codes configuration
+// Seharusnya dari environment variables atau backend di production
+// Untuk demo, menggunakan hardcoded dengan comments untuk security update
+// TODO: Pindahkan ke environment variables setelah setup
 const MAGIC_CODES = {
   '081111': 'Purwo',
   '140222': 'Ashri',
@@ -30,6 +42,44 @@ export default function App() {
   const [demoEnabled, setDemoEnabled] = useState(() => localStorage.getItem('demoEnabled') !== 'false');
   const [showBalance, setShowBalance] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  // --- DATA STATE ---
+  const [wallets, setWallets] = useState([]);
+  const [budgets, setBudgets] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+
+  // --- FORM STATE (HOME) ---
+  const [nominal, setNominal] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedTarget, setSelectedTarget] = useState('');
+  const [transactionDate, setTransactionDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+  const [transactionType, setTransactionType] = useState(null); // 'income' | 'expense'
+  const [showTargetModal, setShowTargetModal] = useState(false);
+
+  // --- MODAL STATE (MANAGE) ---
+  const [showModal, setShowModal] = useState(null);
+  const [transferData, setTransferData] = useState({ fromId: '', toId: '', amount: '' });
+  const [newData, setNewData] = useState({ name: '', limit: '', description: '' });
+  const [editingData, setEditingData] = useState({ id: null, type: null, name: '', description: '' });
+
+  // --- NOTIFICATION STATE ---
+  const [toast, setToast] = useState(null);
+  const [confirm, setConfirm] = useState(null);
+  const [sessionTimeoutHandler, setSessionTimeoutHandler] = useState(null);
+  const [showSessionWarning, setShowSessionWarning] = useState(false);
+
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ message, type });
+  }, []);
+
+  const showConfirm = useCallback((message) => {
+    return new Promise((resolve) => {
+      setConfirm({ message, resolve });
+    });
+  }, []);
 
   // Check if URL has ?clear=1 to trigger cache clear
   useEffect(() => {
@@ -69,72 +119,86 @@ export default function App() {
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [user]);
+  }, [user, showToast]);
 
-  // --- DATA STATE ---
-  const [wallets, setWallets] = useState([]);
-  const [budgets, setBudgets] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-
-  // --- FORM STATE (HOME) ---
-  const [nominal, setNominal] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedTarget, setSelectedTarget] = useState('');
-  const [transactionDate, setTransactionDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  });
-  const [transactionType, setTransactionType] = useState(null); // 'income' | 'expense'
-  const [showTargetModal, setShowTargetModal] = useState(false);
-
-  // --- MODAL STATE (MANAGE) ---
-  const [showModal, setShowModal] = useState(null);
-  const [transferData, setTransferData] = useState({ fromId: '', toId: '', amount: '' });
-  const [newData, setNewData] = useState({ name: '', limit: '', description: '' });
-  const [editingData, setEditingData] = useState({ id: null, type: null, name: '', description: '' });
-
-  // --- NOTIFICATION STATE ---
-  const [toast, setToast] = useState(null);
-  const [confirm, setConfirm] = useState(null);
-
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-  };
-
-  const showConfirm = (message) => {
-    return new Promise((resolve) => {
-      setConfirm({ message, resolve });
-    });
-  };
-
+  // ✅ SECURITY: Improved Magic Login with Rate Limiting & Validation
   const handleMagicLogin = () => {
-    const trimmed = magicCode.trim().toLowerCase();
-    if (!trimmed) {
-      showToast('Masukkan kode sakti', 'error');
+    // 1. Validate input
+    const validation = validateMagicCode(magicCode);
+    if (!validation.valid) {
+      showToast(validation.error, 'error');
       return;
     }
-    // Debug: log available codes
-    console.log('Available codes:', Object.keys(MAGIC_CODES));
-    console.log('Input:', trimmed);
+
+    // 2. Check rate limiting
+    const rateCheck = checkLoginAttempts('magic_login');
+    if (!rateCheck.allowed) {
+      logSecurityEvent('LOGIN_BLOCKED_RATE_LIMIT', { 
+        remaining: rateCheck.remaining 
+      });
+      showToast(rateCheck.message, 'error');
+      return;
+    }
+
+    // 3. Check magic code
+    const trimmed = validation.code.toLowerCase();
     const found = MAGIC_CODES[trimmed];
+    
     if (!found) {
-      showToast('Kode sakti salah', 'error');
+      recordLoginAttempt('magic_login');
+      logSecurityEvent('LOGIN_FAILED_INVALID_CODE');
+      showToast(`Kode sakti salah (sisa ${rateCheck.remaining - 1} percobaan)`, 'error');
       return;
     }
+
+    // 4. Check demo access
     if (trimmed === 'demo' && !demoEnabled) {
+      recordLoginAttempt('magic_login');
+      logSecurityEvent('LOGIN_FAILED_DEMO_DISABLED');
       showToast('Kode sakti demo dinonaktifkan', 'error');
       return;
     }
+
+    // 5. Success - clear attempts
+    clearLoginAttempts('magic_login');
     setUser(found);
     setMagicCode('');
-    showToast(`Halo ${found}!`, 'success');
+    logSecurityEvent('LOGIN_SUCCESS', { user: found });
+    showToast(`✅ Halo ${found}!`, 'success');
   };
 
   useEffect(() => {
     if (user) {
       localStorage.setItem('appUser', user);
+      logSecurityEvent('USER_LOGIN', { user });
+
+      // ✅ SECURITY: Initialize session timeout
+      const handler = initSessionTimeout(
+        () => {
+          // Session expired
+          setUser(null);
+          setMagicCode('');
+          logSecurityEvent('SESSION_EXPIRED', { user });
+          showToast('⏱️ Sesi berakhir karena tidak ada aktivitas', 'warning');
+        },
+        () => {
+          // Show warning
+          setShowSessionWarning(true);
+          logSecurityEvent('SESSION_WARNING', { user });
+        }
+      );
+
+      setSessionTimeoutHandler(handler);
+
+      return () => {
+        handler.cleanup();
+      };
     } else {
       localStorage.removeItem('appUser');
+      if (sessionTimeoutHandler) {
+        sessionTimeoutHandler.cleanup();
+        setSessionTimeoutHandler(null);
+      }
     }
   }, [user]);
 
@@ -434,6 +498,47 @@ export default function App() {
             setConfirm(null);
           }}
         />
+      )}
+
+      {/* SESSION WARNING DIALOG */}
+      {showSessionWarning && user && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+          <div className="bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl p-6 sm:max-w-sm w-full sm:m-4 animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="text-3xl">⏱️</div>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white">Sesi Akan Berakhir</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Tidak ada aktivitas selama 25 menit</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
+              Sesi Anda akan berakhir dalam 5 menit. Lanjutkan aktivitas atau logout sekarang.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowSessionWarning(false);
+                  if (sessionTimeoutHandler) {
+                    sessionTimeoutHandler.resetTimer();
+                  }
+                }}
+                className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors"
+              >
+                Lanjutkan
+              </button>
+              <button
+                onClick={() => {
+                  setShowSessionWarning(false);
+                  setUser(null);
+                  logSecurityEvent('SESSION_MANUAL_LOGOUT', { user });
+                }}
+                className="flex-1 py-2 rounded-lg bg-slate-300 hover:bg-slate-400 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white font-semibold transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* MODAL */}

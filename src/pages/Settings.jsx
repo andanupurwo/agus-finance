@@ -3,12 +3,15 @@ import { Database, AlertTriangle, Package, RefreshCw, Calendar, Trash, ChevronDo
 import { useDeveloperMode } from '../hooks/useDeveloperMode';
 import { useTheme } from '../context/ThemeContext';
 import { BulkImport } from '../components/BulkImport';
+import { hashPin, comparePinWithHash, validatePin, logSecurityEvent } from '../utils/security';
 
 export const Settings = ({ wallets, budgets, transactions, setLoading, loading, user, showToast, showConfirm, demoEnabled, setDemoEnabled, setUser }) => {
   const { loadDummyData, loadDefaultCategories, resetFactory, clearTransactions, monthlyRollover } = useDeveloperMode(showToast, showConfirm);
   const { themeMode, setTheme } = useTheme();
   const isProd = typeof import.meta !== 'undefined' ? import.meta.env?.PROD : false;
-  const DEV_PIN = '0000';
+  
+  // ⚠️ SECURITY: DEV_PIN hanya untuk development
+  const DEV_PIN = import.meta.env.VITE_DEV_PIN || (import.meta.env.DEV ? '0000' : null);
   const [sections, setSections] = useState({
     theme: false,
     about: false,
@@ -70,53 +73,74 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
     }, 50);
   };
 
-  // Handle Change PIN
-  const handleChangePin = () => {
+  // ✅ SECURITY: Improved Handle Change PIN with Hashing
+  const handleChangePin = async () => {
     const { oldPin, newPin, confirmPin } = changePinForm;
     
-    if (!oldPin.trim()) {
-      showToast('Masukkan PIN lama', 'error');
+    // Validate input
+    const oldPinValidation = validatePin(oldPin);
+    if (!oldPinValidation.valid) {
+      showToast(oldPinValidation.error, 'error');
       return;
     }
-    
-    if (!newPin.trim()) {
-      showToast('Masukkan PIN baru', 'error');
+
+    const newPinValidation = validatePin(newPin);
+    if (!newPinValidation.valid) {
+      showToast(newPinValidation.error, 'error');
       return;
     }
     
     if (newPin !== confirmPin) {
       showToast('PIN baru tidak cocok', 'error');
+      logSecurityEvent('PIN_CHANGE_MISMATCH', { user });
       return;
     }
     
-    if (newPin.length !== 6) {
-      showToast('PIN harus 6 digit', 'error');
-      return;
+    // Get current PIN hash from localStorage
+    const storageKey = `pin_hash_${user}`;
+    const currentPinHash = localStorage.getItem(storageKey) || null;
+    
+    // Verify old PIN
+    try {
+      let oldPinCorrect = false;
+      
+      if (currentPinHash) {
+        // Compare with hash
+        oldPinCorrect = await comparePinWithHash(oldPin, currentPinHash);
+      } else {
+        // First time setting PIN, no previous PIN
+        oldPinCorrect = (oldPin === '000000'); // Default initial PIN
+      }
+      
+      if (!oldPinCorrect) {
+        showToast('PIN lama salah', 'error');
+        logSecurityEvent('PIN_CHANGE_INVALID_OLD', { user });
+        return;
+      }
+
+      // Hash new PIN
+      const newPinHash = await hashPin(newPin);
+      
+      // Save hashed PIN
+      localStorage.setItem(storageKey, newPinHash);
+      
+      // Broadcast to other tabs that PIN changed
+      localStorage.setItem('PIN_CHANGED_EVENT', JSON.stringify({
+        user,
+        timestamp: Date.now()
+      }));
+      
+      logSecurityEvent('PIN_CHANGE_SUCCESS', { user });
+      showToast(`✓ Kode sakti berhasil diganti! User lain akan logout otomatis.`, 'success');
+      
+      // Reset form
+      setChangePinForm({ oldPin: '', newPin: '', confirmPin: '' });
+      setShowChangePinModal(false);
+    } catch (error) {
+      console.error('PIN change error:', error);
+      showToast('Gagal mengubah PIN', 'error');
+      logSecurityEvent('PIN_CHANGE_ERROR', { user, error: error.message });
     }
-    
-    // Get current PIN from localStorage
-    const storageKey = `pin_${user}`;
-    const currentPin = localStorage.getItem(storageKey) || '000000';
-    
-    if (oldPin !== currentPin) {
-      showToast('PIN lama salah', 'error');
-      return;
-    }
-    
-    // Save new PIN
-    localStorage.setItem(storageKey, newPin);
-    
-    // Broadcast to other tabs that PIN changed
-    localStorage.setItem('PIN_CHANGED_EVENT', JSON.stringify({
-      user,
-      timestamp: Date.now()
-    }));
-    
-    showToast(`✓ Kode sakti berhasil diganti! User lain akan logout otomatis.`, 'success');
-    
-    // Reset form
-    setChangePinForm({ oldPin: '', newPin: '', confirmPin: '' });
-    setShowChangePinModal(false);
   };
 
   const handleDevModeToggle = () => {
@@ -126,21 +150,34 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
   };
 
   const handlePinSubmit = () => {
+    // ⚠️ SECURITY: Check if DEV_PIN is available (not in production)
+    if (!DEV_PIN) {
+      showToast('Developer Mode tidak tersedia di production', 'error');
+      logSecurityEvent('DEV_MODE_BLOCKED_PROD');
+      setShowPinModal(false);
+      return;
+    }
+
     const pinOk = pin === DEV_PIN;
     const ackOk = !isProd || ackText.trim().toUpperCase() === 'SAYA MENGERTI';
+    
     if (!pinOk) {
       showToast('PIN salah!', 'error');
+      logSecurityEvent('DEV_MODE_INVALID_PIN', { user });
       setPin('');
       return;
     }
+    
     if (!ackOk) {
       showToast('Ketik persetujuan tepat: SAYA MENGERTI', 'error');
       return;
     }
+    
     setDevModeOpen(attemptedDevMode);
     setShowPinModal(false);
     setPin('');
     setAckText('');
+    logSecurityEvent('DEV_MODE_TOGGLE', { user, enabled: attemptedDevMode });
     showToast(`Developer Mode ${attemptedDevMode ? 'diaktifkan' : 'dinonaktifkan'}`, 'success');
   };
 
