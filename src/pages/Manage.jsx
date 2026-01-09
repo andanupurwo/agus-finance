@@ -84,24 +84,66 @@ export const Manage = ({
     setDraggedId(null);
   };
 
+  // Calculate wallet and budget totals
+  const walletTotal = wallets.reduce((acc, w) => acc + parseRupiah(w.amount), 0);
+  const budgetTotal = budgets.reduce((acc, b) => {
+    const expenseTransactions = transactions.filter(t => 
+      t.type === 'expense' && t.targetId === b.id
+    );
+    const totalExpense = expenseTransactions.reduce((sum, t) => 
+      sum + parseRupiah(t.amount), 0
+    );
+    const available = parseRupiah(b.limit) - totalExpense;
+    return acc + available;
+  }, 0);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 px-1.5">
-      {/* TOTAL WEALTH */}
-      <div>
-        <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Total Uang (Wallet + Sisa Budget)</p>
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Rp {showBalance ? formatRupiah(totalNetWorth) : '••••••••'}</h1>
-          <button onClick={() => setShowBalance(!showBalance)}><EyeOff size={18} className="text-slate-500 dark:text-slate-500 transition-colors duration-300"/></button>
+      {/* TOTAL WEALTH - NEW DESIGN */}
+      <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 transition-colors duration-300">
+        {/* Main Amount */}
+        <div className="mb-6">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1 tracking-wide">Total Uang</p>
+              <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">
+                Rp {showBalance ? formatRupiah(totalNetWorth) : '••••••••'}
+              </h1>
+            </div>
+            <button 
+              onClick={() => setShowBalance(!showBalance)}
+              className="p-2 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
+              title={showBalance ? "Sembunyikan saldo" : "Tampilkan saldo"}
+            >
+              <EyeOff size={20} className="text-slate-500 dark:text-slate-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* Breakdown */}
+        <div className="space-y-3 border-t border-slate-300 dark:border-slate-700 pt-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">Total Wallet</span>
+            <span className="text-lg font-bold text-blue-600 dark:text-blue-400">Rp {showBalance ? formatRupiah(walletTotal) : '••••••••'}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">Total Budget Tersisa</span>
+            <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">Rp {showBalance ? formatRupiah(budgetTotal) : '••••••••'}</span>
+          </div>
         </div>
       </div>
 
-      {/* ACTION BUTTONS */}
+      {/* ACTION BUTTON - MINIMALIST */}
       {!isReadOnly && (
-      <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => setShowModal('transfer')} className="col-span-2 py-3 bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 rounded-xl font-bold text-white shadow-lg shadow-blue-600/40 dark:shadow-blue-900/40 flex items-center justify-center gap-2 transition-all">
-              <ArrowRightLeft size={18}/> Alokasi / Pindah Dana
-          </button>
-      </div>
+        <button 
+          onClick={() => setShowModal('transfer')} 
+          className="w-full group relative overflow-hidden rounded-xl py-3 px-4 font-semibold text-white transition-all duration-300 bg-gradient-to-r from-blue-600 to-blue-500 hover:shadow-lg hover:shadow-blue-500/30 active:scale-95"
+        >
+          <div className="flex items-center justify-center gap-2">
+            <ArrowRightLeft size={18} className="transition-transform group-hover:rotate-180 duration-500" />
+            <span>Alokasi Dana</span>
+          </div>
+        </button>
       )}
 
       {/* WALLETS SECTION */}
