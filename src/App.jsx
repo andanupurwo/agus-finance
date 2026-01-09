@@ -461,7 +461,7 @@ export default function App() {
       {/* HEADER with Date */}
       <Header user={user} setUser={setUser} />
 
-      <main className="flex-1 mt-28 pt-2 px-1.5 sm:px-3 pb-24 overflow-y-auto">{renderContent()}</main>
+      <main className="flex-1 mt-24 pt-3 px-1.5 sm:px-3 pb-24 overflow-y-auto">{renderContent()}</main>
 
       {/* BOTTOM NAV */}
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
