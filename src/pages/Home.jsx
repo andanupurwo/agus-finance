@@ -268,18 +268,29 @@ export const Home = ({
                 budgets.length === 0 ? (
                   <p className="text-slate-500 dark:text-slate-400 text-sm text-center py-4">Belum ada budget</p>
                 ) : (
-                  budgets.map(b => (
-                    <button
-                      key={b.id}
-                      onClick={() => handleTargetSelect(b.id)}
-                      className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white p-4 rounded-xl text-left transition-all active:scale-95"
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{b.name}</span>
-                        <span className="text-slate-600 dark:text-slate-400 text-sm">Sisa: {b.amount}</span>
-                      </div>
-                    </button>
-                  ))
+                  budgets.map(b => {
+                    // Hitung total pengeluaran dari transaksi yang menargetkan budget ini
+                    const expenseTransactions = transactions.filter(t => 
+                      t.type === 'expense' && t.targetId === b.id
+                    );
+                    const used = expenseTransactions.reduce((sum, t) => 
+                      sum + parseRupiah(t.amount), 0
+                    );
+                    const available = parseRupiah(b.limit) - used;
+                    
+                    return (
+                      <button
+                        key={b.id}
+                        onClick={() => handleTargetSelect(b.id)}
+                        className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white p-4 rounded-xl text-left transition-all active:scale-95"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{b.name}</span>
+                          <span className="text-slate-600 dark:text-slate-400 text-sm">Sisa: Rp {available.toLocaleString('id-ID')}</span>
+                        </div>
+                      </button>
+                    );
+                  })
                 )
               )}
             </div>

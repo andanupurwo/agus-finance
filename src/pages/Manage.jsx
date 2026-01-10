@@ -86,15 +86,6 @@ export const Manage = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20 px-1.5">
-      {/* TOTAL WEALTH */}
-      <div>
-        <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Total Uang (Wallet + Sisa Budget)</p>
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Rp {showBalance ? formatRupiah(totalNetWorth) : '••••••••'}</h1>
-          <button onClick={() => setShowBalance(!showBalance)}><EyeOff size={18} className="text-slate-500 dark:text-slate-500 transition-colors duration-300"/></button>
-        </div>
-      </div>
-
       {/* ACTION BUTTONS */}
       {!isReadOnly && (
       <div className="grid grid-cols-2 gap-3">
@@ -107,7 +98,7 @@ export const Manage = ({
       {/* WALLETS SECTION */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Wallet (Dompet)</h2>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Wallet (Dompet) = Total Rp {wallets.reduce((sum, w) => sum + parseRupiah(w.amount), 0).toLocaleString('id-ID')}</h2>
           {!isReadOnly && <button onClick={() => setShowModal('addWallet')} className="p-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 transition-colors duration-300"><Plus size={16}/></button>}
         </div>
         {wallets.length === 0 ? (
@@ -157,7 +148,7 @@ export const Manage = ({
       {/* BUDGETS SECTION */}
       <div>
          <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Budget (Anggaran)</h2>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Budget (Anggaran) = Tersisa Rp {budgets.reduce((sum, b) => { const expenseTransactions = transactions.filter(t => t.type === 'expense' && t.targetId === b.id); const used = expenseTransactions.reduce((s, t) => s + parseRupiah(t.amount), 0); return sum + (parseRupiah(b.limit) - used); }, 0).toLocaleString('id-ID')}</h2>
             {!isReadOnly && <button onClick={() => setShowModal('addBudget')} className="p-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 transition-colors duration-300"><Plus size={16}/></button>}
          </div>
          {budgets.length === 0 ? (
