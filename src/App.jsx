@@ -403,6 +403,7 @@ export default function App() {
         setShowModal={setShowModal}
         wallets={wallets}
         budgets={budgets}
+        transactions={transactions}
         transferData={transferData}
         setTransferData={setTransferData}
         newData={newData}

@@ -65,6 +65,7 @@ export const Home = ({
       user,
       wallets,
       budgets,
+      transactions,
       setNominal,
       setDescription,
       setSelectedTarget,

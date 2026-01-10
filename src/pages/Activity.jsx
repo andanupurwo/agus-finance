@@ -232,7 +232,7 @@ export const Activity = ({ transactions, wallets, budgets, handleDeleteTransacti
                          <Edit2 size={16} className={isReadOnly ? 'opacity-30' : ''} />
                        </button>
                        <button
-                         onClick={() => handleDeleteTransaction(t, wallets, budgets)}
+                         onClick={() => handleDeleteTransaction(t, wallets, budgets, transactions)}
                          className="p-2 rounded-lg text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors duration-300"
                          aria-label="Hapus transaksi"
                          disabled={isReadOnly}

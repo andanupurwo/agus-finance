@@ -1,6 +1,26 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { useTransactions } from '../hooks/useTransactions';
+import { parseRupiah, formatRupiah } from '../utils/formatter';
+
+// Helper: Hitung sisa budget (limit - expenses)
+const calculateBudgetRemaining = (budget, transactions) => {
+  if (!budget.limit) return 0;
+  const used = transactions
+    .filter(t => t.type === 'expense' && t.targetId === budget.id)
+    .reduce((sum, t) => sum + parseRupiah(t.amount), 0);
+  return parseRupiah(budget.limit) - used;
+};
+
+// Helper: Tampilkan amount - untuk wallet langsung, budget calculated
+const getDisplayAmount = (entity, isWallet, transactions) => {
+  if (isWallet) {
+    return entity.amount;
+  } else {
+    const remaining = calculateBudgetRemaining(entity, transactions);
+    return formatRupiah(remaining);
+  }
+};
 
 const WALLET_COLORS = [
   { name: 'Merah', value: '#FF0000', rgbValue: 'rgb(255, 0, 0)' },
@@ -32,6 +52,7 @@ export const Modal = ({
   handleEdit,
   user,
   setLoading,
+  transactions,
   editingData,
   setEditingData
 }) => {
@@ -64,7 +85,7 @@ export const Modal = ({
               <select className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white p-3 rounded-xl text-sm focus:border-blue-500 dark:focus:border-blue-400 outline-none transition-colors duration-300" value={transferData.fromId} onChange={e => setTransferData({...transferData, fromId: e.target.value})}>
                 <option value="">Pilih Sumber</option>
                 <optgroup label="Wallets">{wallets.map(w => <option key={w.id} value={w.id}>{w.name} (Rp {w.amount})</option>)}</optgroup>
-                <optgroup label="Budgets">{budgets.map(b => <option key={b.id} value={b.id}>{b.name} (Rp {b.amount})</option>)}</optgroup>
+                <optgroup label="Budgets">{budgets.map(b => <option key={b.id} value={b.id}>{b.name} (Sisa: Rp {getDisplayAmount(b, false, transactions)})</option>)}</optgroup>
               </select>
             </div>
             <div>
@@ -74,7 +95,7 @@ export const Modal = ({
                 {sourceType !== 'budget' && (
                   <optgroup label="Wallets">{wallets.map(w => <option key={w.id} value={w.id} disabled={w.id === transferData.fromId}>{w.name} (Rp {w.amount})</option>)}</optgroup>
                 )}
-                <optgroup label="Budgets">{budgets.map(b => <option key={b.id} value={b.id} disabled={b.id === transferData.fromId}>{b.name} (Rp {b.amount})</option>)}</optgroup>
+                <optgroup label="Budgets">{budgets.map(b => <option key={b.id} value={b.id} disabled={b.id === transferData.fromId}>{b.name} (Sisa: Rp {getDisplayAmount(b, false, transactions)})</option>)}</optgroup>
               </select>
               {sourceType === 'budget' && (
                 <p className="text-[10px] text-yellow-600 dark:text-yellow-500 mt-1">⚠️ Budget hanya bisa transfer ke Budget lain</p>
@@ -84,7 +105,7 @@ export const Modal = ({
               <label className="text-xs text-slate-600 dark:text-slate-400 block mb-1">Nominal</label>
               <input type="text" className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white p-3 rounded-xl text-sm font-bold placeholder-slate-500 dark:placeholder-slate-600 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition-colors duration-300" placeholder="0" value={transferData.amount} onChange={e => handleNominalInput(e, val => setTransferData({...transferData, amount: val}))} />
             </div>
-            <button onClick={() => handleTransfer(transferData, wallets, budgets, setTransferData, setShowModal, user, setLoading)} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 py-3 rounded-xl font-bold text-white mt-2 transition-all disabled:opacity-50">Proses Alokasi</button>
+            <button onClick={() => handleTransfer(transferData, wallets, budgets, transactions, setTransferData, setShowModal, user, setLoading)} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 py-3 rounded-xl font-bold text-white mt-2 transition-all disabled:opacity-50">Proses Alokasi</button>
           </div>
         ) : showModal === 'editWallet' || showModal === 'editBudget' ? (
           <div className="space-y-4">

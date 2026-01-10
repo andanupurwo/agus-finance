@@ -25,13 +25,21 @@ export const Summary = ({ transactions, budgets }) => {
 
     const net = totalIncome - totalExpense;
 
-    // Budget breakdown
-    const budgetBreakdown = budgets.map(b => ({
-      name: b.name,
-      limit: parseRupiah(b.limit || '0'),
-      used: parseRupiah(b.limit || '0') - parseRupiah(b.amount || '0'),
-      remaining: parseRupiah(b.amount || '0')
-    })).filter(b => b.limit > 0);
+    // Budget breakdown - hitung sisa dari transaksi expense
+    const budgetBreakdown = budgets.map(b => {
+      const limit = parseRupiah(b.limit || '0');
+      const used = transactions
+        .filter(t => t.type === 'expense' && t.targetId === b.id)
+        .reduce((sum, t) => sum + parseRupiah(t.amount), 0);
+      const remaining = limit - used;
+      
+      return {
+        name: b.name,
+        limit,
+        used,
+        remaining
+      };
+    }).filter(b => b.limit > 0);
 
     return { totalIncome, totalExpense, net, budgetBreakdown };
   }, [transactions, budgets, currentMonth]);

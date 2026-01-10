@@ -2,6 +2,32 @@ import { addDoc, collection, updateDoc, doc, deleteDoc, getDoc } from 'firebase/
 import { db } from '../firebase';
 import { formatRupiah, parseRupiah, isCurrentMonth } from '../utils/formatter';
 
+// ============================================
+// HELPER FUNCTIONS UNTUK BUDGET CALCULATION
+// ============================================
+
+/**
+ * Menghitung total pengeluaran untuk suatu budget
+ * @param {string} budgetId - ID budget
+ * @param {array} transactions - Semua transaksi
+ * @returns {number} Total pengeluaran dalam rupiah
+ */
+const calculateBudgetUsed = (budgetId, transactions) => {
+  return transactions
+    .filter(t => t.type === 'expense' && t.targetId === budgetId)
+    .reduce((sum, t) => sum + parseRupiah(t.amount), 0);
+};
+
+/**
+ * Menghitung sisa budget
+ * @param {object} budget - Budget object dengan field 'limit'
+ * @param {number} used - Total pengeluaran
+ * @returns {number} Sisa budget dalam rupiah (bisa negative jika over budget)
+ */
+const calculateBudgetRemaining = (budget, used) => {
+  return parseRupiah(budget.limit || '0') - used;
+};
+
 export const useTransactions = (showToast, showConfirm) => {
   const handleDailyTransaction = async (
     type,
@@ -12,6 +38,7 @@ export const useTransactions = (showToast, showConfirm) => {
     user,
     wallets,
     budgets,
+    transactions,
     setNominal,
     setDescription,
     setSelectedTarget,
@@ -53,13 +80,20 @@ export const useTransactions = (showToast, showConfirm) => {
         if (!targetBudget) throw new Error('Budget tidak ditemukan');
         targetName = targetBudget.name;
         targetType = 'budget';
-        const newAmount = parseRupiah(targetBudget.amount) - amountVal;
-        if (newAmount < 0) {
-          showToast?.("Budget tidak cukup, top up dulu via transfer", "error");
+        
+        // PERBAIKAN: Hitung sisa budget dari transaksi, bukan dari field amount
+        const used = calculateBudgetUsed(selectedTarget, transactions || []);
+        const remaining = calculateBudgetRemaining(targetBudget, used);
+        
+        if (remaining < amountVal) {
+          const kurang = amountVal - remaining;
+          showToast?.(
+            `Budget "${targetName}" kurang Rp ${kurang.toLocaleString('id-ID')}. Top up dulu via transfer.`,
+            "error"
+          );
           setLoading(false);
           return;
         }
-        await updateDoc(doc(db, "budgets", selectedTarget), { amount: formatRupiah(newAmount) });
       }
 
       await addDoc(collection(db, "transactions"), {
@@ -87,6 +121,7 @@ export const useTransactions = (showToast, showConfirm) => {
     transferData,
     wallets,
     budgets,
+    transactions,
     setTransferData,
     setShowModal,
     user,
@@ -102,77 +137,85 @@ export const useTransactions = (showToast, showConfirm) => {
     const amountVal = parseRupiah(amount);
     
     try {
-      let sourceRef, sourceData, sourceCollection;
-      const isSourceWallet = wallets.find(w => w.id === fromId);
+      // DETERMINE SOURCE (Wallet atau Budget)
+      const isSourceWallet = wallets.some(w => w.id === fromId);
+      const sourceData = isSourceWallet 
+        ? wallets.find(w => w.id === fromId)
+        : budgets.find(b => b.id === fromId);
       
-      if (isSourceWallet) {
-        sourceCollection = "wallets";
-        sourceData = isSourceWallet;
-      } else {
-        sourceCollection = "budgets";
-        sourceData = budgets.find(b => b.id === fromId);
+      if (!sourceData) throw new Error('Sumber tidak ditemukan');
+      
+      // Validasi saldo sumber cukup
+      let sourceAmount = parseRupiah(sourceData.amount || '0');
+      
+      // KHUSUS untuk budget source, jika tidak punya amount, hitung dari limit - used
+      if (!isSourceWallet && !sourceData.amount) {
+        const used = calculateBudgetUsed(fromId, transactions || []);
+        sourceAmount = calculateBudgetRemaining(sourceData, used);
       }
       
-      const currentSourceAmount = parseRupiah(sourceData.amount);
-      if (currentSourceAmount < amountVal) { 
+      if (sourceAmount < amountVal) { 
         setLoading(false); 
         showToast?.("Saldo sumber tidak cukup!", "error");
         return;
       }
 
-      let destRef, destData, destCollection;
-      const isDestWallet = wallets.find(w => w.id === toId);
-
-      if (isDestWallet) {
-        destCollection = "wallets";
-        destData = isDestWallet;
-      } else {
-        destCollection = "budgets";
-        destData = budgets.find(b => b.id === toId);
-      }
-
-      // Update sumber
-      await updateDoc(doc(db, sourceCollection, fromId), { amount: formatRupiah(currentSourceAmount - amountVal) });
+      // DETERMINE DESTINATION (Wallet atau Budget)
+      const isDestWallet = wallets.some(w => w.id === toId);
+      const destData = isDestWallet
+        ? wallets.find(w => w.id === toId)
+        : budgets.find(b => b.id === toId);
       
-      // Update tujuan
-      const currentDestAmount = parseRupiah(destData.amount);
-      let updateDestData = { amount: formatRupiah(currentDestAmount + amountVal) };
+      if (!destData) throw new Error('Tujuan tidak ditemukan');
+
+      // UPDATE SUMBER
+      await updateDoc(doc(db, isSourceWallet ? 'wallets' : 'budgets', fromId), { 
+        amount: formatRupiah(sourceAmount - amountVal) 
+      });
       
-      // Jika tujuan adalah budget, update limitnya juga
-      if (destCollection === "budgets") {
+      // UPDATE TUJUAN
+      const destAmount = parseRupiah(destData.amount || '0');
+      let updateDestData = { amount: formatRupiah(destAmount + amountVal) };
+      
+      // PENTING: Jika tujuan adalah BUDGET, NAIKKAN LIMIT (alokasi)
+      // BUKAN amount! Limit adalah yang naik saat top up
+      if (!isDestWallet) {
         const currentDestLimit = parseRupiah(destData.limit || '0');
         updateDestData.limit = formatRupiah(currentDestLimit + amountVal);
       }
       
-      await updateDoc(doc(db, destCollection, toId), updateDestData);
+      await updateDoc(doc(db, isDestWallet ? 'wallets' : 'budgets', toId), updateDestData);
       
-      // Jika sumber adalah budget dan tujuan budget, kurangi limit sumber
-      if (sourceCollection === "budgets" && destCollection === "budgets") {
+      // Jika sumber adalah BUDGET dan tujuan juga BUDGET: kurangi limit sumber
+      if (!isSourceWallet && !isDestWallet) {
         const currentSourceLimit = parseRupiah(sourceData.limit || '0');
-        await updateDoc(doc(db, "budgets", fromId), { limit: formatRupiah(Math.max(0, currentSourceLimit - amountVal)) });
+        await updateDoc(doc(db, "budgets", fromId), { 
+          limit: formatRupiah(Math.max(0, currentSourceLimit - amountVal)) 
+        });
       }
       
+      // Catat transaksi transfer
       await addDoc(collection(db, "transactions"), {
         title: "Alokasi Dana",
         amount: amount,
         type: 'transfer',
         user: user,
         time: new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}),
-        target: `${sourceData.name} -> ${destData.name}`,
+        target: `${sourceData.name} → ${destData.name}`,
         fromId,
         toId,
-        fromType: sourceCollection === 'wallets' ? 'wallet' : 'budget',
-        toType: destCollection === 'wallets' ? 'wallet' : 'budget',
+        fromType: isSourceWallet ? 'wallet' : 'budget',
+        toType: isDestWallet ? 'wallet' : 'budget',
         createdAt: Date.now()
       });
-
-      setShowModal(null); setTransferData({ fromId: '', toId: '', amount: '' });
-      showToast?.("Alokasi Berhasil!", "success");
+      setShowModal(null); 
+      setTransferData({ fromId: '', toId: '', amount: '' });
+      showToast?.("Transfer Berhasil!", "success");
     } catch (e) { 
       showToast?.(e.message, "error");
     }
     setLoading(false);
-  }
+  };
 
   const handleCreate = async (
     showModal,
@@ -280,49 +323,55 @@ export const useTransactions = (showToast, showConfirm) => {
       showToast?.("Item berhasil dihapus", "success");
   }
 
-  const handleDeleteTransaction = async (tx, wallets, budgets) => {
+  const handleDeleteTransaction = async (tx, wallets, budgets, transactions) => {
     const confirmed = await showConfirm?.("Hapus transaksi ini dan kembalikan saldo?");
     if (!confirmed) return;
     const amountVal = parseRupiah(tx.amount);
 
     try {
       if (tx.type === 'income') {
-        const wallet = wallets.find(w => w.id === tx.targetId || w.name === tx.target);
+        // Hapus income: kurangi saldo wallet
+        const wallet = wallets.find(w => w.id === tx.targetId);
         if (wallet) {
           const newBalance = Math.max(0, parseRupiah(wallet.amount) - amountVal);
           await updateDoc(doc(db, 'wallets', wallet.id), { amount: formatRupiah(newBalance) });
         }
       } else if (tx.type === 'expense') {
-        const budget = budgets.find(b => b.id === tx.targetId || b.name === tx.target);
-        if (budget) {
-          const newAmount = parseRupiah(budget.amount) + amountVal;
-          await updateDoc(doc(db, 'budgets', budget.id), { amount: formatRupiah(newAmount) });
-        }
+        // Hapus expense: tidak perlu update amount budget
+        // Karena sisa budget dihitung dari transaksi
+        // Cukup hapus transaksi, sisa otomatis bertambah
       } else if (tx.type === 'transfer') {
+        // Hapus transfer: reverse the changes
         const isFromWallet = (tx.fromType === 'wallet' || tx.fromType === 'wallets');
         const isToWallet = (tx.toType === 'wallet' || tx.toType === 'wallets');
+        
         const fromEntity = isFromWallet
-          ? wallets.find(w => w.id === tx.fromId || w.name === tx.target?.split(' -> ')[0])
-          : budgets.find(b => b.id === tx.fromId || b.name === tx.target?.split(' -> ')[0]);
+          ? wallets.find(w => w.id === tx.fromId)
+          : budgets.find(b => b.id === tx.fromId);
+        
         const toEntity = isToWallet
-          ? wallets.find(w => w.id === tx.toId || w.name === tx.target?.split(' -> ')[1])
-          : budgets.find(b => b.id === tx.toId || b.name === tx.target?.split(' -> ')[1]);
+          ? wallets.find(w => w.id === tx.toId)
+          : budgets.find(b => b.id === tx.toId);
 
         if (fromEntity) {
-          const collectionName = isFromWallet ? 'wallets' : 'budgets';
-          const newAmount = parseRupiah(fromEntity.amount) + amountVal;
-          await updateDoc(doc(db, collectionName, fromEntity.id), { amount: formatRupiah(newAmount) });
-          if (!isFromWallet) {
+          // Kembalikan saldo/limit source
+          if (isFromWallet) {
+            const newAmount = parseRupiah(fromEntity.amount) + amountVal;
+            await updateDoc(doc(db, 'wallets', fromEntity.id), { amount: formatRupiah(newAmount) });
+          } else {
+            // Budget source: kembalikan limit
             const currentLimit = parseRupiah(fromEntity.limit || '0');
             await updateDoc(doc(db, 'budgets', fromEntity.id), { limit: formatRupiah(currentLimit + amountVal) });
           }
         }
 
         if (toEntity) {
-          const collectionName = isToWallet ? 'wallets' : 'budgets';
-          const newAmount = Math.max(0, parseRupiah(toEntity.amount) - amountVal);
-          await updateDoc(doc(db, collectionName, toEntity.id), { amount: formatRupiah(newAmount) });
-          if (!isToWallet) {
+          // Kembalikan saldo/limit destination
+          if (isToWallet) {
+            const newAmount = Math.max(0, parseRupiah(toEntity.amount) - amountVal);
+            await updateDoc(doc(db, 'wallets', toEntity.id), { amount: formatRupiah(newAmount) });
+          } else {
+            // Budget destination: kurangi limit
             const currentLimit = parseRupiah(toEntity.limit || '0');
             await updateDoc(doc(db, 'budgets', toEntity.id), { limit: formatRupiah(Math.max(0, currentLimit - amountVal)) });
           }
@@ -341,13 +390,12 @@ export const useTransactions = (showToast, showConfirm) => {
     setter(raw ? formatRupiah(raw) : '');
   };
 
-  const handleEditTransaction = async (transaction, updatedData, wallets, budgets, setLoading) => {
+  const handleEditTransaction = async (transaction, updatedData, wallets, budgets, transactions, setLoading) => {
     if (!updatedData.nominal) {
       showToast?.("Nominal harus diisi!", "error");
       return;
     }
 
-    // Gunakan nilai existing jika field tidak diedit
     const effectiveTargetId = updatedData.selectedTarget || transaction.targetId;
     const effectiveTargetName = updatedData.targetName || transaction.target;
     const effectiveDate = updatedData.transactionDate || transaction.date;
@@ -359,17 +407,17 @@ export const useTransactions = (showToast, showConfirm) => {
       const amountDifference = newAmountVal - oldAmountVal;
       const targetChanged = transaction.targetId !== effectiveTargetId;
 
-      // Handle amount/target changes
       if (transaction.type === 'income') {
+        // INCOME: update wallet saldo
         if (!targetChanged) {
-          // Target sama: update langsung dengan selisih
+          // Target sama: update selisih
           const wallet = wallets.find(w => w.id === transaction.targetId);
           if (wallet) {
             const newBalance = parseRupiah(wallet.amount) + amountDifference;
             await updateDoc(doc(db, 'wallets', wallet.id), { amount: formatRupiah(newBalance) });
           }
         } else {
-          // Target berubah: reverse old, apply new
+          // Target berubah: reverse lama, apply baru
           const oldWallet = wallets.find(w => w.id === transaction.targetId);
           if (oldWallet) {
             const reversedBalance = parseRupiah(oldWallet.amount) - oldAmountVal;
@@ -382,34 +430,32 @@ export const useTransactions = (showToast, showConfirm) => {
           }
         }
       } else if (transaction.type === 'expense') {
+        // EXPENSE: tidak perlu update amount budget (calculated dari transaksi)
+        // Hanya cek apakah budget masih cukup untuk amount baru
         if (!targetChanged) {
-          // Target sama: update langsung dengan selisih
+          // Target sama: validasi sisa cukup untuk selisih
           const budget = budgets.find(b => b.id === transaction.targetId);
-          if (budget) {
-            const newAmount = parseRupiah(budget.amount) - amountDifference;
-            if (newAmount < 0) {
-              showToast?.("Budget tidak cukup", "error");
+          if (budget && amountDifference > 0) {
+            // Jika nominal naik, cek apakah sisa masih cukup
+            const used = calculateBudgetUsed(transaction.targetId, transactions);
+            const remaining = calculateBudgetRemaining(budget, used - oldAmountVal); // exclude transaksi lama
+            if (remaining < newAmountVal) {
+              showToast?.(`Budget tidak cukup untuk perubahan ke Rp ${newAmountVal.toLocaleString('id-ID')}`, "error");
               setLoading(false);
               return;
             }
-            await updateDoc(doc(db, 'budgets', budget.id), { amount: formatRupiah(newAmount) });
           }
         } else {
-          // Target berubah: reverse old, apply new
-          const oldBudget = budgets.find(b => b.id === transaction.targetId);
-          if (oldBudget) {
-            const reversedAmount = parseRupiah(oldBudget.amount) + oldAmountVal;
-            await updateDoc(doc(db, 'budgets', oldBudget.id), { amount: formatRupiah(reversedAmount) });
-          }
+          // Target berubah: validasi budget baru cukup
           const newBudget = budgets.find(b => b.id === effectiveTargetId);
           if (newBudget) {
-            const newAmount = parseRupiah(newBudget.amount) - newAmountVal;
-            if (newAmount < 0) {
-              showToast?.("Budget tidak cukup", "error");
+            const used = calculateBudgetUsed(effectiveTargetId, transactions);
+            const remaining = calculateBudgetRemaining(newBudget, used);
+            if (remaining < newAmountVal) {
+              showToast?.(`Budget tujuan tidak cukup untuk Rp ${newAmountVal.toLocaleString('id-ID')}`, "error");
               setLoading(false);
               return;
             }
-            await updateDoc(doc(db, 'budgets', effectiveTargetId), { amount: formatRupiah(newAmount) });
           }
         }
       }
