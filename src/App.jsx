@@ -309,7 +309,12 @@ export default function App() {
   // Not logged in - show LogIn login
   if (!firebaseUser) {
     return (
-      <div className="min-h-screen w-full max-w-none mx-auto font-sans flex flex-col transition-colors duration-300 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+      <div className="min-h-screen w-full max-w-none mx-auto font-sans relative overflow-hidden transition-colors duration-300 bg-slate-950 text-white">
+        {/* Futuristic gradient background */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(14,165,233,0.25),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(52,211,153,0.2),transparent_30%),linear-gradient(135deg,#0f172a,#020617)]" aria-hidden="true" />
+        {/* Grid overlay */}
+        <div className="absolute inset-0 opacity-20" aria-hidden="true" style={{backgroundImage: 'linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)', backgroundSize: '24px 24px'}} />
+
         {toast && (
           <Toast
             message={toast.message}
@@ -317,25 +322,46 @@ export default function App() {
             onClose={() => setToast(null)}
           />
         )}
-        <div className="flex-1 flex items-center justify-center px-4 sm:px-6 pb-[env(safe-area-inset-bottom)]">
-          <div className="w-full max-w-sm space-y-6">
-            <div className="text-center">
-              <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white">💰 Agus Finance</h1>
+
+        <div className="relative flex-1 flex items-center justify-center px-4 sm:px-6 pb-[env(safe-area-inset-bottom)] min-h-screen">
+          <div className="w-full max-w-md">
+            <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-8 shadow-2xl shadow-cyan-500/20">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.25em] text-cyan-300">Agus Finance</p>
+                  <h1 className="text-3xl sm:text-4xl font-extrabold text-white mt-1">Masuk</h1>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 flex items-center justify-center text-slate-900 font-bold shadow-lg shadow-cyan-400/40">
+                  💰
+                </div>
+              </div>
+
+              <p className="text-sm text-slate-200/80 mb-6 leading-relaxed">
+                Akses dasbor keuangan keluarga dengan akun Google Anda. Data aman, real-time, dan berbagi dalam satu keluarga.
+              </p>
+
+              <button
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-white text-slate-900 font-bold hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/30 border border-white/40"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                {loading ? 'Sedang login...' : 'Login dengan Google'}
+              </button>
+
+              <div className="mt-5 text-[11px] text-slate-200/70 text-center">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="inline-flex h-[1px] w-10 bg-white/20" />
+                  <span>Keamanan by Firebase Auth</span>
+                  <span className="inline-flex h-[1px] w-10 bg-white/20" />
+                </div>
+              </div>
             </div>
-            
-            <button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-              {loading ? 'Sedang login...' : 'Login dengan Google'}
-            </button>
           </div>
         </div>
       </div>
