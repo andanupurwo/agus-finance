@@ -233,17 +233,17 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
         )}
       </div>
 
-      {/* ABOUT SECTION */}
-      <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm" ref={sectionRefs.about}>
+      {/* APP INFO SECTION - Moved up for verification */}
+      <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm" ref={sectionRefs.appInfo}>
         <button
-          onClick={() => toggleSection('about')}
+          onClick={() => toggleSection('appInfo')}
           className="w-full p-5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900/80 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <Info size={20} className="text-blue-600 dark:text-blue-400" />
-            <h3 className="font-bold text-slate-900 dark:text-white">Tentang Aplikasi</h3>
+            <BarChart3 size={20} className="text-purple-600 dark:text-purple-400" />
+            <h3 className="font-bold text-slate-900 dark:text-white">Informasi Aplikasi</h3>
           </div>
-          <ChevronDown size={20} className={`text-slate-600 dark:text-slate-400 transition-transform ${sections.about ? 'rotate-180' : ''}`} />
+          <ChevronDown size={20} className={`text-slate-600 dark:text-slate-400 transition-transform ${sections.appInfo ? 'rotate-180' : ''}`} />
         </button>
 
         {sections.about && (
