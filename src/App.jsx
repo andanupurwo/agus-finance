@@ -109,28 +109,28 @@ export default function App() {
       return;
     }
     
-    // Check if it's a username from MAGIC_CODES
-    const found = MAGIC_CODES[trimmed];
-    if (found) {
-      // User found, verify/setup PIN
-      const result = verifyPin(found, '000000'); // Try default PIN first
+    // First, check if it's a MAGIC CODE (username identifier like '081111')
+    const foundUser = MAGIC_CODES[trimmed];
+    if (foundUser) {
+      // Login dengan magic code - backward compatible
+      setUser(foundUser);
+      setMagicCode('');
       
-      if (result.success || !result.message.includes('tidak ditemukan')) {
-        // User exists but wrong PIN or needs setup
-        setUser(found);
-        setMagicCode('');
-        
-        // Setup default PIN if not exists
-        if (result.message.includes('tidak ditemukan')) {
-          setPinData(found, '000000');
+      // Setup default PIN jika belum ada (untuk fitur ganti PIN nanti)
+      try {
+        const pinData = localStorage.getItem(`pin_${foundUser}`);
+        if (!pinData) {
+          setPinData(foundUser, '000000'); // Default PIN untuk pertama kali
         }
-        
-        showToast(`Halo ${found}!`, 'success');
-        return;
+      } catch (e) {
+        console.error('PIN setup error:', e);
       }
+      
+      showToast(`Halo ${foundUser}!`, 'success');
+      return;
     }
     
-    // Try as PIN for existing users
+    // If not a magic code, try as custom PIN for users who changed their PIN
     for (const [code, username] of Object.entries(MAGIC_CODES)) {
       const result = verifyPin(username, trimmed);
       if (result.success) {
