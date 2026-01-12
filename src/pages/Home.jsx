@@ -25,7 +25,9 @@ export const Home = ({
   setLoading,
   showToast,
   showConfirm,
-  isReadOnly
+  isReadOnly,
+  familyId,
+  currentUserId
 }) => {
   const { handleDailyTransaction, handleNominalInput } = useTransactions(showToast, showConfirm);
   const [orderedBudgets, setOrderedBudgets] = useState(budgets);
@@ -69,7 +71,9 @@ export const Home = ({
       setNominal,
       setDescription,
       setSelectedTarget,
-      setLoading
+      setLoading,
+      familyId,
+      currentUserId
     );
     // Reset form setelah transaksi
     setTransactionType(null);

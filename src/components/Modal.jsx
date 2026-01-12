@@ -54,7 +54,10 @@ export const Modal = ({
   setLoading,
   transactions,
   editingData,
-  setEditingData
+  setEditingData,
+  familyId,
+  currentUserId,
+  currentUserEmail
 }) => {
   const { handleNominalInput } = useTransactions();
 
@@ -105,7 +108,7 @@ export const Modal = ({
               <label className="text-xs text-slate-600 dark:text-slate-400 block mb-1">Nominal</label>
               <input type="text" className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white p-3 rounded-xl text-sm font-bold placeholder-slate-500 dark:placeholder-slate-600 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition-colors duration-300" placeholder="0" value={transferData.amount} onChange={e => handleNominalInput(e, val => setTransferData({...transferData, amount: val}))} />
             </div>
-            <button onClick={() => handleTransfer(transferData, wallets, budgets, transactions, setTransferData, setShowModal, user, setLoading)} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 py-3 rounded-xl font-bold text-white mt-2 transition-all disabled:opacity-50">Proses Alokasi</button>
+            <button onClick={() => handleTransfer(transferData, wallets, budgets, transactions, setTransferData, setShowModal, user, setLoading, familyId, currentUserId)} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 py-3 rounded-xl font-bold text-white mt-2 transition-all disabled:opacity-50">Proses Alokasi</button>
           </div>
         ) : showModal === 'editWallet' || showModal === 'editBudget' ? (
           <div className="space-y-4">
@@ -155,7 +158,7 @@ export const Modal = ({
                 </div>
               </div>
             )}
-            <button onClick={() => handleCreate(showModal, newData, setShowModal, setNewData, setLoading, wallets, budgets)} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-500 py-3 rounded-xl font-bold text-white mt-2 transition-all disabled:opacity-50">Simpan</button>
+            <button onClick={() => handleCreate(showModal, newData, setShowModal, setNewData, setLoading, wallets, budgets, familyId, currentUserId, currentUserEmail)} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-500 py-3 rounded-xl font-bold text-white mt-2 transition-all disabled:opacity-50">Simpan</button>
           </div>
         )}
       </div>

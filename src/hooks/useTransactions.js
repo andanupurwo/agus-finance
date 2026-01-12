@@ -42,7 +42,9 @@ export const useTransactions = (showToast, showConfirm) => {
     setNominal,
     setDescription,
     setSelectedTarget,
-    setLoading
+    setLoading,
+    familyId,
+    currentUserId
   ) => {
     if (!nominal) {
       showToast?.("Nominal harus diisi!", "error");
@@ -60,6 +62,11 @@ export const useTransactions = (showToast, showConfirm) => {
       return;
     }
     
+    if (!familyId) {
+      showToast?.('Family belum siap. Silakan relogin.', 'error');
+      return;
+    }
+
     setLoading(true);
     const amountVal = parseRupiah(nominal);
     const timeNow = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
@@ -101,6 +108,8 @@ export const useTransactions = (showToast, showConfirm) => {
         amount: nominal,
         type: type,
         user: user,
+        createdBy: currentUserId,
+        familyId,
         time: timeNow,
         date: transactionDate,
         target: targetName,
@@ -125,13 +134,20 @@ export const useTransactions = (showToast, showConfirm) => {
     setTransferData,
     setShowModal,
     user,
-    setLoading
+    setLoading,
+    familyId,
+    currentUserId
   ) => {
     const { fromId, toId, amount } = transferData;
     if (!fromId || !toId || !amount) {
       showToast?.("Data transfer belum lengkap!", "error");
       return;
     }
+    if (!familyId) {
+      showToast?.('Family belum siap. Silakan relogin.', 'error');
+      return;
+    }
+
     setLoading(true);
 
     const amountVal = parseRupiah(amount);
@@ -197,6 +213,8 @@ export const useTransactions = (showToast, showConfirm) => {
         amount: amount,
         type: 'transfer',
         user: user,
+        createdBy: currentUserId,
+        familyId,
         time: new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}),
         target: `${sourceData.name} → ${destData.name}`,
         fromId,
@@ -221,7 +239,10 @@ export const useTransactions = (showToast, showConfirm) => {
     setNewData,
     setLoading,
     wallets,
-    budgets
+    budgets,
+    familyId,
+    currentUserId,
+    currentUserEmail
   ) => {
     if (!newData.name) {
       showToast?.("Nama harus diisi!", "error");
@@ -244,6 +265,11 @@ export const useTransactions = (showToast, showConfirm) => {
       }
     }
 
+    if (!familyId) {
+      showToast?.('Family belum siap. Silakan relogin.', 'error');
+      return;
+    }
+
     setLoading(true);
     try {
         if (showModal === 'addWallet') {
@@ -253,7 +279,10 @@ export const useTransactions = (showToast, showConfirm) => {
                 amount: '0',
                 type: 'Rekening',
                 color: newData.color || 'from-slate-800 to-slate-900 border-slate-700',
-                createdAt: Date.now()
+          familyId,
+          createdBy: currentUserId,
+          createdByEmail: currentUserEmail,
+          createdAt: Date.now()
             });
         } else {
             await addDoc(collection(db, "budgets"), {
@@ -263,7 +292,10 @@ export const useTransactions = (showToast, showConfirm) => {
                 limit: '0',
                 color: 'bg-slate-800 text-slate-200 border border-slate-700',
                 bar: 'bg-blue-500',
-                createdAt: Date.now()
+          familyId,
+          createdBy: currentUserId,
+          createdByEmail: currentUserEmail,
+          createdAt: Date.now()
             });
         }
         setShowModal(null); setNewData({name: '', limit: '', description: ''});
