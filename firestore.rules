@@ -1,45 +1,63 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Check if user document exists and has superadmin role
-    function isSuperAdmin(uid) {
-      return exists(/databases/$(database)/documents/users/$(uid)) &&
-             get(/databases/$(database)/documents/users/$(uid)).data.role == 'superadmin';
+    // Helper function: Check if user is member of family
+    function isFamilyMember(familyId) {
+      return exists(/databases/$(database)/documents/families/$(familyId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/families/$(familyId)).data.members;
     }
     
-    // Check if user owns this resource
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+    // Helper function: Get member role
+    function getMemberRole(familyId) {
+      return get(/databases/$(database)/documents/families/$(familyId)).data.members[request.auth.uid].role;
     }
     
-    // Users collection - Auth required
+    // Helper function: Check if member can edit
+    function canEditFamily(familyId) {
+      let role = getMemberRole(familyId);
+      return role == 'superadmin' || role == 'admin';
+    }
+
+    // Users collection
     match /users/{userId} {
-      // Any authenticated user can read their own profile
-      allow read: if request.auth.uid == userId;
-      // Superadmin can read all users
-      allow read: if isSuperAdmin(request.auth.uid);
-      // Users can write their own profile
+      allow read: if request.auth.uid == userId ||
+                     isFamilyMember(request.auth.uid in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId);
       allow write: if request.auth.uid == userId;
-      // Only superadmin can modify user roles or delete users
-      allow delete: if isSuperAdmin(request.auth.uid);
     }
-    
-    // Wallets collection - User-specific access
+
+    // Families collection
+    match /families/{familyId} {
+      allow read: if isFamilyMember(familyId);
+      allow write: if isFamilyMember(familyId) && canEditFamily(familyId);
+      allow delete: if isFamilyMember(familyId) && getMemberRole(familyId) == 'superadmin';
+    }
+
+    // Wallets - family-based shared access
     match /wallets/{walletId} {
-      allow read, write: if request.auth != null && isOwner(resource.data.userId);
-      allow create: if request.auth != null && isOwner(request.resource.data.userId);
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if request.auth != null && isFamilyMember(request.resource.data.familyId) &&
+                       canEditFamily(request.resource.data.familyId);
+      allow write: if isFamilyMember(resource.data.familyId) && canEditFamily(resource.data.familyId);
+      allow delete: if isFamilyMember(resource.data.familyId) && getMemberRole(resource.data.familyId) == 'superadmin';
     }
-    
-    // Budgets collection - User-specific access
+
+    // Budgets - family-based shared access
     match /budgets/{budgetId} {
-      allow read, write: if request.auth != null && isOwner(resource.data.userId);
-      allow create: if request.auth != null && isOwner(request.resource.data.userId);
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if request.auth != null && isFamilyMember(request.resource.data.familyId) &&
+                       canEditFamily(request.resource.data.familyId);
+      allow write: if isFamilyMember(resource.data.familyId) && canEditFamily(resource.data.familyId);
+      allow delete: if isFamilyMember(resource.data.familyId) && getMemberRole(resource.data.familyId) == 'superadmin';
     }
-    
-    // Transactions collection - User-specific access
+
+    // Transactions - family-based shared access
     match /transactions/{transactionId} {
-      allow read, write: if request.auth != null && isOwner(resource.data.userId);
-      allow create: if request.auth != null && isOwner(request.resource.data.userId);
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if request.auth != null && isFamilyMember(request.resource.data.familyId);
+      allow write: if isFamilyMember(resource.data.familyId) && 
+                      (getMemberRole(resource.data.familyId) in ['superadmin', 'admin'] ||
+                       request.auth.uid == resource.data.createdBy);
+      allow delete: if isFamilyMember(resource.data.familyId) && getMemberRole(resource.data.familyId) == 'superadmin';
     }
   }
 }

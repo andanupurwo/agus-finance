@@ -262,6 +262,7 @@ export default function App() {
             setLoading={setLoading}
             loading={loading}
             user={user}
+            userData={userData}
             userRole={userRole}
             setUser={setFirebaseUser}
             showToast={showToast}

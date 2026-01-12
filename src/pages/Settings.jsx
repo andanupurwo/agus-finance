@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Info, BookOpen, Upload, BarChart3, Sun, Moon, Monitor, Lock, Trash2, Eye, EyeOff, Users, UserPlus, KeyRound, Unlock, UserX } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { BulkImport } from '../components/BulkImport';
+import { FamilyManagement } from '../components/FamilyManagement';
 import { cacheManager } from '../utils/cacheManager';
 import { firebaseConfig, environment } from '../firebase';
 import { db } from '../firebase';
@@ -9,7 +10,7 @@ import { collection, getDocs, writeBatch } from 'firebase/firestore';
 import { changePin, validatePinStrength } from '../utils/pinManager';
 import { getAllUsers, createUser, resetUserPin, unlockUser, deleteUser, getUserStats } from '../utils/userManager';
 
-export const Settings = ({ wallets, budgets, transactions, setLoading, loading, user, userRole, showToast, showConfirm, setUser, onForceRefresh }) => {
+export const Settings = ({ wallets, budgets, transactions, setLoading, loading, user, userData, userRole, showToast, showConfirm, setUser, onForceRefresh }) => {
   const { themeMode, setTheme } = useTheme();
   const isProd = typeof import.meta !== 'undefined' ? import.meta.env?.PROD : false;
   const [sections, setSections] = useState({
@@ -170,6 +171,21 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">Settings</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400">Kelola aplikasi dan panduan penggunaan</p>
       </div>
+
+      {/* FAMILY MANAGEMENT SECTION */}
+      {userData && (
+        <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm">
+          <div className="border-t border-slate-200 dark:border-slate-800 p-5 space-y-4 animate-in fade-in duration-300">
+            <FamilyManagement
+              familyId={userData.familyId}
+              currentUserId={userData.uid}
+              userRole={userRole}
+              showToast={showToast}
+              showConfirm={showConfirm}
+            />
+          </div>
+        </div>
+      )}
 
       {/* THEME SECTION */}
       <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors duration-300 shadow-sm" ref={sectionRefs.theme}>
