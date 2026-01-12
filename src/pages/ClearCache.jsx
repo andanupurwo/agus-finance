@@ -1,29 +1,16 @@
 import React, { useEffect } from 'react';
+import { cacheManager } from '../utils/cacheManager';
 
 export const ClearCache = () => {
   useEffect(() => {
-    // Clear localStorage
-    localStorage.clear();
-    
-    // Clear sessionStorage
-    sessionStorage.clear();
-    
-    // Unregister all service workers
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        registrations.forEach(registration => {
-          registration.unregister();
-        });
-      });
-    }
-    
-    // Show message
-    console.log('✓ Cache cleared! Reloading...');
-    
-    // Reload after 1 second
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 1000);
+    const run = async () => {
+      await cacheManager.clearAllCache();
+      console.log('✓ All cache cleared! Reloading...');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
+    };
+    run();
   }, []);
 
   return (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
-import { collection, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, deleteDoc, doc, getDocsFromServer } from 'firebase/firestore';
 import { Home as HomeIcon } from 'lucide-react';
 import { Home } from './pages/Home';
 import { Activity } from './pages/Activity';
@@ -12,14 +12,13 @@ import { Modal } from './components/Modal';
 import { Header } from './components/Header';
 import { Toast, ConfirmDialog } from './components/Toast';
 import { useTransactions } from './hooks/useTransactions';
-import { useDeveloperMode } from './hooks/useDeveloperMode';
 import { useTheme } from './context/ThemeContext';
 import { formatRupiah, parseRupiah } from './utils/formatter';
+import { cacheManager } from './utils/cacheManager';
 
 const MAGIC_CODES = {
   '081111': 'Purwo',
-  '140222': 'Ashri',
-  demo: 'Demo'
+  '140222': 'Ashri'
 };
 
 export default function App() {
@@ -27,7 +26,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'home');
   const [user, setUser] = useState(() => localStorage.getItem('appUser') || null);
   const [magicCode, setMagicCode] = useState('');
-  const [demoEnabled, setDemoEnabled] = useState(() => localStorage.getItem('demoEnabled') !== 'false');
   const [showBalance, setShowBalance] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -35,15 +33,11 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('clear') === '1') {
-      // Redirect to ClearCache component
-      window.location.href = '/';
-      localStorage.clear();
-      sessionStorage.clear();
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-          registrations.forEach(registration => registration.unregister());
-        });
-      }
+      // Full cache clear then reload
+      (async () => {
+        await cacheManager.clearAllCache();
+        window.location.href = '/';
+      })();
     }
   }, []);
 
@@ -121,10 +115,6 @@ export default function App() {
       showToast('Kode sakti salah', 'error');
       return;
     }
-    if (trimmed === 'demo' && !demoEnabled) {
-      showToast('Kode sakti demo dinonaktifkan', 'error');
-      return;
-    }
     setUser(found);
     setMagicCode('');
     showToast(`Halo ${found}!`, 'success');
@@ -142,9 +132,6 @@ export default function App() {
     localStorage.setItem('activeTab', activeTab);
   }, [activeTab]);
 
-  useEffect(() => {
-    localStorage.setItem('demoEnabled', demoEnabled);
-  }, [demoEnabled]);
 
   // Get hooks
   const {
@@ -157,7 +144,7 @@ export default function App() {
     handleNominalInput
   } = useTransactions(showToast, showConfirm);
   
-  const { monthlyRollover } = useDeveloperMode(showToast, showConfirm);
+  
 
   // 1. SYNC FIREBASE
   useEffect(() => {
@@ -180,8 +167,8 @@ export default function App() {
     const isFirstOfMonth = today.getDate() === 1;
     if (!isFirstOfMonth) return;
 
-    // Tampilkan reminder ringan untuk melakukan rollover manual di Settings
-    showToast('🔔 Awal bulan: lakukan Rollover di Settings untuk mengembalikan sisa budget dan set ulang limit.', 'info');
+    // Reminder ringan di awal bulan
+    showToast('🔔 Awal bulan: periksa sisa budget dan set ulang limit secara manual.', 'info');
   }, [wallets, budgets]);
 
   // Hitung Total Uang = Total Wallet + Total Budget yang Tersedia
@@ -223,7 +210,7 @@ export default function App() {
             setLoading={setLoading}
             showToast={showToast}
             showConfirm={showConfirm}
-            isReadOnly={user === 'Demo'}
+            isReadOnly={false}
           />
         );
       case 'activity':
@@ -236,7 +223,7 @@ export default function App() {
             showToast={showToast}
             showConfirm={showConfirm}
             setLoading={setLoading}
-            isReadOnly={user === 'Demo'}
+            isReadOnly={false}
           />
         );
       case 'manage':
@@ -254,7 +241,7 @@ export default function App() {
             loading={loading}
             showToast={showToast}
             showConfirm={showConfirm}
-            isReadOnly={user === 'Demo'}
+            isReadOnly={false}
             setEditingData={setEditingData}
           />
         );
@@ -270,8 +257,27 @@ export default function App() {
             setUser={setUser}
             showToast={showToast}
             showConfirm={showConfirm}
-            demoEnabled={demoEnabled}
-            setDemoEnabled={setDemoEnabled}
+            onForceRefresh={async () => {
+              try {
+                setLoading(true);
+                showToast('🔄 Memuat ulang dari server...', 'info');
+                const [wSnap, bSnap, tSnap] = await Promise.all([
+                  getDocsFromServer(query(collection(db, 'wallets'), orderBy('createdAt'))),
+                  getDocsFromServer(query(collection(db, 'budgets'), orderBy('createdAt'))),
+                  getDocsFromServer(query(collection(db, 'transactions'), orderBy('createdAt', 'desc')))
+                ]);
+                const freshWallets = wSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const freshBudgets = bSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const freshTransactions = tSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                setWallets(freshWallets);
+                setBudgets(freshBudgets);
+                setTransactions(freshTransactions);
+                showToast('✓ Data diperbarui dari server', 'success');
+              } catch (e) {
+                showToast(e.message || 'Gagal force refresh', 'error');
+              }
+              setLoading(false);
+            }}
           />
         );
       default:
@@ -319,21 +325,6 @@ export default function App() {
                 className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-600/40 dark:shadow-blue-900/40 active:scale-95 transition-all"
               >
                 Masuk
-              </button>
-              <button
-                onClick={() => {
-                  localStorage.clear();
-                  sessionStorage.clear();
-                  if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.getRegistrations().then(registrations => {
-                      registrations.forEach(registration => registration.unregister());
-                    });
-                  }
-                  setTimeout(() => window.location.reload(), 500);
-                }}
-                className="w-full py-2 rounded-xl bg-slate-400 hover:bg-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-semibold text-xs transition-all"
-              >
-                Bersihkan Cache
               </button>
             </div>
         </div>

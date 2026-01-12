@@ -197,10 +197,7 @@ export const BulkImport = ({ wallets = [], budgets = [], user, loading, setLoadi
       showToast?.('Tidak ada data untuk diimport', 'error');
       return;
     }
-    if (user === 'Demo') {
-      showToast?.('Mode Demo: impor dinonaktifkan', 'error');
-      return;
-    }
+    // Demo mode removed; proceed with import
 
     const errors = [];
     let success = 0;
@@ -261,11 +258,8 @@ export const BulkImport = ({ wallets = [], budgets = [], user, loading, setLoadi
           } else if (tipe === 'expense') {
             const budget = resolveBudgetByName(target || toCol || fromCol) || (fallbackBudgetId ? budgets.find(b => b.id === fallbackBudgetId) : null);
             if (!budget) throw new Error('Budget tidak ditemukan');
-            const newAmount = parseRupiah(budget.amount) - amountVal;
-            if (newAmount < 0) throw new Error('Budget tidak cukup');
-            
-            // Update budget terlebih dahulu SEBELUM menambah transaksi
-            await updateDoc(doc(db, 'budgets', budget.id), { amount: formatRupiah(newAmount) });
+            // CATATAN: Budget remaining dihitung dari limit - sum(expenses), bukan dari stored amount
+            // Jadi kita hanya tambah transaksi saja, tidak update budget.amount
             
             await addDoc(collection(db, 'transactions'), {
               title: ket || 'Pengeluaran',
@@ -295,25 +289,33 @@ export const BulkImport = ({ wallets = [], budgets = [], user, loading, setLoadi
             const toCollection = toWallet ? 'wallets' : 'budgets';
             if (!source || !dest) throw new Error('Sumber/Tujuan tidak ditemukan');
 
-            const currentSourceAmount = parseRupiah(source.amount);
+            // Untuk budget: gunakan limit untuk validasi, bukan amount
+            let currentSourceAmount;
+            if (fromWallet) {
+              currentSourceAmount = parseRupiah(source.amount);
+            } else {
+              currentSourceAmount = parseRupiah(source.limit || '0');
+            }
             if (currentSourceAmount < amountVal) throw new Error('Saldo sumber tidak cukup');
 
             // Update sumber
-            await updateDoc(doc(db, fromCollection, source.id), { amount: formatRupiah(currentSourceAmount - amountVal) });
-
-            // Update tujuan (+ update limit jika budget)
-            const currentDestAmount = parseRupiah(dest.amount);
-            const destUpdate = { amount: formatRupiah(currentDestAmount + amountVal) };
-            if (toCollection === 'budgets') {
-              const currentLimit = parseRupiah(dest.limit || '0');
-              destUpdate.limit = formatRupiah(currentLimit + amountVal);
+            if (fromWallet) {
+              await updateDoc(doc(db, fromCollection, source.id), { amount: formatRupiah(currentSourceAmount - amountVal) });
+            } else {
+              // Untuk budget sumber: kurangi limit
+              const currentLimit = parseRupiah(source.limit || '0');
+              await updateDoc(doc(db, fromCollection, source.id), { limit: formatRupiah(Math.max(0, currentLimit - amountVal)) });
             }
-            await updateDoc(doc(db, toCollection, dest.id), destUpdate);
 
-            // Jika sumber dan tujuan sama-sama budget, kurangi limit sumber
-            if (fromCollection === 'budgets' && toCollection === 'budgets') {
-              const currentSourceLimit = parseRupiah(source.limit || '0');
-              await updateDoc(doc(db, 'budgets', source.id), { limit: formatRupiah(Math.max(0, currentSourceLimit - amountVal)) });
+            // Update tujuan
+            let destAmount;
+            if (toWallet) {
+              destAmount = parseRupiah(dest.amount);
+              await updateDoc(doc(db, toCollection, dest.id), { amount: formatRupiah(destAmount + amountVal) });
+            } else {
+              // Untuk budget tujuan: tambah limit
+              const currentLimit = parseRupiah(dest.limit || '0');
+              await updateDoc(doc(db, toCollection, dest.id), { limit: formatRupiah(currentLimit + amountVal) });
             }
 
             await addDoc(collection(db, 'transactions'), {

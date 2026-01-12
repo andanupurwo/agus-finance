@@ -1,6 +1,16 @@
 import * as XLSX from 'xlsx';
 
 export const exportToExcel = (transactions, month, filterType) => {
+  // Validasi input
+  if (!transactions || !Array.isArray(transactions)) {
+    alert('❌ Tidak ada transaksi untuk diexport');
+    return;
+  }
+  if (transactions.length === 0) {
+    alert('ℹ️ Daftar transaksi kosong');
+    return;
+  }
+
   // Prepare data for Excel
   const data = transactions.map((t, index) => ({
     'No': index + 1,
@@ -22,8 +32,7 @@ export const exportToExcel = (transactions, month, filterType) => {
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + parseInt(t.amount.replace(/\./g, '')), 0);
 
-  // Add summary rows
-  data.push({});
+  // Add summary rows (skip empty row)
   data.push({ 'No': '', 'Tanggal': 'RINGKASAN', 'Waktu': '', 'Tipe': '', 'Keterangan': '', 'Target': '', 'Nominal': '', 'User': '' });
   data.push({ 'No': '', 'Tanggal': 'Total Pemasukan', 'Waktu': '', 'Tipe': '', 'Keterangan': '', 'Target': '', 'Nominal': totalIncome, 'User': '' });
   data.push({ 'No': '', 'Tanggal': 'Total Pengeluaran', 'Waktu': '', 'Tipe': '', 'Keterangan': '', 'Target': '', 'Nominal': totalExpense, 'User': '' });
