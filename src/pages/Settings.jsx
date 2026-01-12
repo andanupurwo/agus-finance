@@ -6,7 +6,7 @@ import { FamilyManagement } from '../components/FamilyManagement';
 import { cacheManager } from '../utils/cacheManager';
 import { firebaseConfig, environment } from '../firebase';
 import { db } from '../firebase';
-import { collection, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, query, where } from 'firebase/firestore';
 
 export const Settings = ({ wallets, budgets, transactions, setLoading, loading, user, userData, userRole, showToast, showConfirm, setUser, onForceRefresh }) => {
   const { themeMode, setTheme } = useTheme();
@@ -398,10 +398,19 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
                   setLoading(true);
                   showToast('🗑️ Menghapus semua data...', 'warning');
                   
-                  // Delete all Firestore collections
+                  // Get user's familyId from userData
+                  const familyId = userData?.familyId;
+                  if (!familyId) {
+                    showToast('Error: Family ID tidak ditemukan', 'error');
+                    setLoading(false);
+                    return;
+                  }
+                  
+                  // Delete all documents in user's family from Firestore
                   const collections = ['wallets', 'budgets', 'transactions'];
                   for (const name of collections) {
-                    const snap = await getDocs(collection(db, name));
+                    const q = query(collection(db, name), where('familyId', '==', familyId));
+                    const snap = await getDocs(q);
                     let batch = writeBatch(db);
                     let count = 0;
                     for (const docRef of snap.docs) {
