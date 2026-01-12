@@ -52,6 +52,7 @@ export default function App() {
   // --- NOTIFICATION STATE ---
   const [toast, setToast] = useState(null);
   const [confirm, setConfirm] = useState(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -120,12 +121,12 @@ export default function App() {
 
   // Handle Logout
   const handleLogout = async () => {
-    if (!window.confirm('Anda yakin ingin logout?')) return;
     try {
       setLoading(true);
       await signOut(auth);
       setFirebaseUser(null);
       setUserData(null);
+      setShowLogoutModal(false);
       showToast('Anda telah logout', 'success');
     } catch (err) {
       console.error('Logout error:', err);
@@ -319,8 +320,7 @@ export default function App() {
         <div className="flex-1 flex items-center justify-center px-4 sm:px-6 pb-[env(safe-area-inset-bottom)]">
           <div className="w-full max-w-sm space-y-6">
             <div className="text-center">
-              <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-2">💰 Agus Finance</h1>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Kelola keuangan Anda dengan mudah</p>
+              <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white">💰 Agus Finance</h1>
             </div>
             
             <button
@@ -367,6 +367,37 @@ export default function App() {
         />
       )}
 
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowLogoutModal(false)}>
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in zoom-in-95 transition-colors duration-300 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">👋</span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Logout?</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">Anda yakin ingin keluar dari aplikasi?</p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 py-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-bold transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleLogout}
+                disabled={loading}
+                className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-700 dark:hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-colors"
+              >
+                {loading ? '⏳ Logout...' : 'Logout'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Modal
         showModal={showModal}
         setShowModal={setShowModal}
@@ -389,7 +420,7 @@ export default function App() {
         setEditingData={setEditingData}
       />
 
-      <Header user={user} userPhoto={firebaseUser?.photoURL} onLogout={handleLogout} />
+      <Header user={user} userPhoto={firebaseUser?.photoURL} onLogout={() => setShowLogoutModal(true)} />
 
       <main className="flex-1 pt-24 px-1.5 sm:px-3 pb-20 overflow-y-auto">{renderContent()}</main>
 
