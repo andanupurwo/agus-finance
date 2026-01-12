@@ -326,11 +326,11 @@ export default function App() {
               
               {/* Logo */}
               <div className="flex justify-center">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 flex items-center justify-center shadow-lg shadow-blue-500/30">
                   <img 
                     src="/pwa-192x192.png" 
                     alt="Agus Finance Logo" 
-                    className="w-16 h-16 rounded-xl"
+                    className="w-28 h-28 rounded-xl"
                   />
                 </div>
               </div>
