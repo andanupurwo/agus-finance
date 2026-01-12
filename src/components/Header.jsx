@@ -1,6 +1,7 @@
 import React from 'react';
+import { LogOut } from 'lucide-react';
 
-export function Header({ user, setUser }) {
+export function Header({ user, onLogout }) {
   // Format current date
   const getCurrentDate = () => {
     const options = { 
@@ -10,6 +11,13 @@ export function Header({ user, setUser }) {
       day: 'numeric' 
     };
     return new Date().toLocaleDateString('id-ID', options);
+  };
+
+  // Get first letter of email or display name
+  const getInitial = () => {
+    if (!user) return '?';
+    const name = user.includes('@') ? user.split('@')[0] : user;
+    return name.charAt(0).toUpperCase();
   };
 
   return (
@@ -27,12 +35,24 @@ export function Header({ user, setUser }) {
           </h1>
           <p className="text-[9px] text-slate-600 dark:text-slate-400 font-medium leading-snug mt-0.5">Buat anggaran untuk masa depan</p>
         </div>
-        <button 
-          onClick={() => setUser(null)} 
-          className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg border border-white/10 transition-colors duration-300 ${user === 'Purwo' ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500' : 'bg-pink-600 hover:bg-pink-700 dark:bg-pink-600 dark:hover:bg-pink-500'}`}
-        >
-          {user ? user.charAt(0) : '?'}
-        </button>
+        
+        <div className="flex items-center gap-2">
+          {/* User Avatar */}
+          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg border border-white/10 bg-blue-600 dark:bg-blue-600">
+            {getInitial()}
+          </div>
+          
+          {/* Logout Button */}
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title="Logout"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-red-700 bg-red-600 transition-colors duration-300 shadow-lg border border-white/10"
+            >
+              <LogOut size={16} />
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth, googleProvider } from './firebase';
+import { db } from './firebase';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, getDocsFromServer } from 'firebase/firestore';
-import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { Home as HomeIcon, LogIn, LogOut } from 'lucide-react';
+import { Home as HomeIcon } from 'lucide-react';
 import { Home } from './pages/Home';
 import { Activity } from './pages/Activity';
 import { Manage } from './pages/Manage';
@@ -16,16 +15,86 @@ import { useTransactions } from './hooks/useTransactions';
 import { useTheme } from './context/ThemeContext';
 import { formatRupiah, parseRupiah } from './utils/formatter';
 import { cacheManager } from './utils/cacheManager';
-import { getOrCreateUser } from './utils/userRoles';
+import { verifyPin, setPinData, getPinData } from './utils/pinManager';
+
+const USER_PROFILES = {
+  purwo: { displayName: 'Purwo', role: 'superadmin', defaultPin: '696969', isReadOnly: false }
+};
+
+const getProfile = (username) => USER_PROFILES[username?.toLowerCase()] || null;
 
 export default function App() {
   const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'home');
-  const [firebaseUser, setFirebaseUser] = useState(null);
-  const [userData, setUserData] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [user, setUser] = useState(() => localStorage.getItem('appUser') || null);
+  const [usernameInput, setUsernameInput] = useState('');
+  const [pinInput, setPinInput] = useState('');
   const [showBalance, setShowBalance] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  // Check if URL has ?clear=1 to trigger cache clear
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('clear') === '1') {
+      // Full cache clear then reload
+      (async () => {
+        await cacheManager.clearAllCache();
+        window.location.href = '/';
+      })();
+    }
+  }, []);
+
+  // Seed default users with hashed PINs if missing
+  useEffect(() => {
+    try {
+      Object.entries(USER_PROFILES).forEach(([key, profile]) => {
+        const pinData = getPinData(key);
+        if (!pinData) {
+          setPinData(key, profile.defaultPin);
+        }
+      });
+    } catch (err) {
+      console.error('Failed to seed default users', err);
+    }
+  }, []);
+
+  // One-time cleanup of legacy development users
+  useEffect(() => {
+    const CLEANUP_FLAG = 'DEV_USER_CLEANUP_DONE';
+    if (localStorage.getItem(CLEANUP_FLAG)) return;
+
+    const deprecatedUsers = ['ashri', 'demo', 'superadmin', 'SuperAdmin'];
+    deprecatedUsers.forEach((u) => {
+      localStorage.removeItem(`pin_${u}`);
+    });
+
+    localStorage.setItem(CLEANUP_FLAG, '1');
+  }, []);
+
+  // Listen for PIN change events (cross-tab communication)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'PIN_CHANGED_EVENT' && e.newValue) {
+        try {
+          const event = JSON.parse(e.newValue);
+          // If PIN changed for a different user, logout current user
+          if (event.user !== user) {
+            showToast(`🔐 PIN telah diubah oleh ${event.user}. Anda akan logout.`, 'warning');
+            setTimeout(() => {
+              setUser(null);
+              setUsernameInput('');
+              setPinInput('');
+            }, 2000);
+          }
+        } catch (err) {
+          console.error('Failed to parse PIN_CHANGED_EVENT', err);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [user]);
 
   // --- DATA STATE ---
   const [wallets, setWallets] = useState([]);
@@ -40,7 +109,7 @@ export default function App() {
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
-  const [transactionType, setTransactionType] = useState(null);
+  const [transactionType, setTransactionType] = useState(null); // 'income' | 'expense'
   const [showTargetModal, setShowTargetModal] = useState(false);
 
   // --- MODAL STATE (MANAGE) ---
@@ -63,82 +132,66 @@ export default function App() {
     });
   };
 
-  // Listen to Firebase Auth state
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setFirebaseUser(user);
-        try {
-          const data = await getOrCreateUser(user);
-          setUserData(data);
-        } catch (err) {
-          console.error('Failed to get user data:', err);
-          showToast('Gagal memuat data user', 'error');
-        }
-      } else {
-        setFirebaseUser(null);
-        setUserData(null);
-      }
-      setAuthLoading(false);
-    });
+  const currentProfile = getProfile(user);
+  const userRole = currentProfile?.role || 'user';
+  const isReadOnly = currentProfile?.isReadOnly || false;
 
-    return () => unsubscribe();
-  }, []);
+  const handleLogin = () => {
+    const username = usernameInput.trim().toLowerCase();
+    const pin = pinInput.trim();
 
-  // Check if URL has ?clear=1
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('clear') === '1') {
-      (async () => {
-        await cacheManager.clearAllCache();
-        window.location.href = '/';
-      })();
+    if (!username) {
+      showToast('Masukkan username', 'error');
+      return;
     }
-  }, []);
+    if (!pin) {
+      showToast('Masukkan PIN', 'error');
+      return;
+    }
 
-  // Handle LogIn Login
-  const handleGoogleLogin = async () => {
+    const profile = getProfile(username);
+    if (!profile) {
+      showToast('Username tidak dikenal', 'error');
+      return;
+    }
+
+    // Pastikan PIN default terset (terhash) jika belum ada
     try {
-      setLoading(true);
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const data = await getOrCreateUser(user);
-      setFirebaseUser(user);
-      setUserData(data);
-      showToast(`Selamat datang, ${data.displayName}!`, 'success');
-    } catch (err) {
-      console.error('LogIn login error:', err);
-      if (err.code === 'auth/popup-closed-by-user') {
-        showToast('Login dibatalkan', 'info');
-      } else {
-        showToast(err.message || 'Gagal login dengan Google', 'error');
+      const pinData = getPinData(username);
+      if (!pinData) {
+        setPinData(username, profile.defaultPin);
       }
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error('PIN setup error:', err);
+    }
+
+    const result = verifyPin(username, pin);
+    if (result.success) {
+      setUser(username);
+      setPinInput('');
+      showToast(`Halo ${profile.displayName}!`, 'success');
+      return;
+    }
+
+    if (result.message?.includes('terkunci')) {
+      showToast(result.message, 'error');
+    } else {
+      showToast('PIN salah', 'error');
     }
   };
 
-  // Handle Logout
-  const handleLogout = async () => {
-    if (!window.confirm('Anda yakin ingin logout?')) return;
-    try {
-      setLoading(true);
-      await signOut(auth);
-      setFirebaseUser(null);
-      setUserData(null);
-      showToast('Anda telah logout', 'success');
-    } catch (err) {
-      console.error('Logout error:', err);
-      showToast('Gagal logout', 'error');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('appUser', user);
+    } else {
+      localStorage.removeItem('appUser');
     }
-  };
+  }, [user]);
 
-  // Setup activeTab persistence
   useEffect(() => {
     localStorage.setItem('activeTab', activeTab);
   }, [activeTab]);
+
 
   // Get hooks
   const {
@@ -150,6 +203,8 @@ export default function App() {
     handleDeleteTransaction,
     handleNominalInput
   } = useTransactions(showToast, showConfirm);
+  
+  
 
   // 1. SYNC FIREBASE
   useEffect(() => {
@@ -165,16 +220,18 @@ export default function App() {
     return () => { unsubW(); unsubB(); unsubT(); };
   }, []);
 
-  // 2. ROLLOVER REMINDER
+  // 2. ROLLOVER REMINDER (non-auto)
   useEffect(() => {
     if (wallets.length === 0 || budgets.length === 0) return;
     const today = new Date();
     const isFirstOfMonth = today.getDate() === 1;
     if (!isFirstOfMonth) return;
+
+    // Reminder ringan di awal bulan
     showToast('🔔 Awal bulan: periksa sisa budget dan set ulang limit secara manual.', 'info');
   }, [wallets, budgets]);
 
-  // Calculate totals
+  // Hitung Total Uang = Total Wallet + Total Budget yang Tersedia
   const walletTotal = wallets.reduce((acc, w) => acc + parseRupiah(w.amount), 0);
   const budgetTotal = budgets.reduce((acc, b) => {
     const expenseTransactions = transactions.filter(t => 
@@ -187,11 +244,6 @@ export default function App() {
     return acc + available;
   }, 0);
   const totalNetWorth = walletTotal + budgetTotal;
-
-  // Role-based access control
-  const userRole = userData?.role || 'user';
-  const isReadOnly = userRole === 'user';
-  const user = firebaseUser?.email || firebaseUser?.displayName;
 
   const renderContent = () => {
     switch (activeTab) {
@@ -263,10 +315,9 @@ export default function App() {
             loading={loading}
             user={user}
             userRole={userRole}
-            setUser={setFirebaseUser}
+            setUser={setUser}
             showToast={showToast}
             showConfirm={showConfirm}
-            onLogout={handleLogout}
             onForceRefresh={async () => {
               try {
                 setLoading(true);
@@ -276,9 +327,12 @@ export default function App() {
                   getDocsFromServer(query(collection(db, 'budgets'), orderBy('createdAt'))),
                   getDocsFromServer(query(collection(db, 'transactions'), orderBy('createdAt', 'desc')))
                 ]);
-                setWallets(wSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-                setBudgets(bSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-                setTransactions(tSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                const freshWallets = wSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const freshBudgets = bSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const freshTransactions = tSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                setWallets(freshWallets);
+                setBudgets(freshBudgets);
+                setTransactions(freshTransactions);
                 showToast('✓ Data diperbarui dari server', 'success');
               } catch (e) {
                 showToast(e.message || 'Gagal force refresh', 'error');
@@ -292,20 +346,7 @@ export default function App() {
     }
   };
 
-  // Loading state
-  if (authLoading) {
-    return (
-      <div className="min-h-screen w-full max-w-none mx-auto font-sans flex flex-col items-center justify-center transition-colors duration-300 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-slate-300 dark:border-slate-700 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-sm">Memuat...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Not logged in - show LogIn login
-  if (!firebaseUser) {
+  if (!user) {
     return (
       <div className="min-h-screen w-full max-w-none mx-auto font-sans flex flex-col transition-colors duration-300 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
         {toast && (
@@ -315,36 +356,54 @@ export default function App() {
             onClose={() => setToast(null)}
           />
         )}
+        {confirm && (
+          <ConfirmDialog
+            message={confirm.message}
+            onConfirm={() => {
+              confirm.resolve(true);
+              setConfirm(null);
+            }}
+            onCancel={() => {
+              confirm.resolve(false);
+              setConfirm(null);
+            }}
+          />
+        )}
         <div className="flex-1 flex items-center justify-center px-4 sm:px-6 pb-[env(safe-area-inset-bottom)]">
-          <div className="w-full max-w-sm space-y-6">
-            <div className="text-center">
-              <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-2">💰 Agus Finance</h1>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Kelola keuangan Anda dengan mudah</p>
+            <div className="w-full max-w-sm space-y-4">
+              <h1 className="text-xl font-extrabold text-slate-900 dark:text-white">Masuk Cepat</h1>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Masukkan username dan PIN untuk lanjut.</p>
+              <input
+                type="text"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                placeholder="Username"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-500 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition-colors duration-300"
+              />
+              <input
+                type="password"
+                value={pinInput}
+                onChange={(e) => setPinInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                placeholder="PIN"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-500 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition-colors duration-300"
+              />
+              <button
+                onClick={handleLogin}
+                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-600/40 dark:shadow-blue-900/40 active:scale-95 transition-all"
+              >
+                Masuk
+              </button>
             </div>
-            
-            <button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-            >
-              <LogIn size={24} />
-              {loading ? 'Sedang login...' : 'Login dengan Google'}
-            </button>
-
-            <div className="text-center text-xs text-slate-500 dark:text-slate-400">
-              <p>Email yang terdaftar:</p>
-              <p className="font-semibold text-slate-900 dark:text-white">andanupurwo@gmail.com (Superadmin)</p>
-              <p className="font-semibold text-slate-900 dark:text-white">ashrinurhida@gmail.com (Admin)</p>
-            </div>
-          </div>
         </div>
       </div>
     );
   }
 
-  // Logged in - show app
   return (
     <div className="min-h-screen w-full max-w-none mx-auto relative font-sans transition-colors duration-300 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+      {/* TOAST NOTIFICATION */}
       {toast && (
         <Toast
           message={toast.message}
@@ -353,6 +412,7 @@ export default function App() {
         />
       )}
 
+      {/* CONFIRM DIALOG */}
       {confirm && (
         <ConfirmDialog
           message={confirm.message}
@@ -367,6 +427,7 @@ export default function App() {
         />
       )}
 
+      {/* MODAL */}
       <Modal
         showModal={showModal}
         setShowModal={setShowModal}
@@ -389,10 +450,12 @@ export default function App() {
         setEditingData={setEditingData}
       />
 
-      <Header user={user} onLogout={handleLogout} />
+      {/* HEADER with Date */}
+      <Header user={user} setUser={setUser} />
 
       <main className="flex-1 pt-24 px-1.5 sm:px-3 pb-20 overflow-y-auto">{renderContent()}</main>
 
+      {/* BOTTOM NAV */}
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );
