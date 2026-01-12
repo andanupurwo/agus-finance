@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, collection, getDocs, updateDoc, query, where, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, updateDoc, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const SUPERADMIN_EMAIL = 'andanupurwo@gmail.com';
@@ -23,16 +23,7 @@ export const getOrCreateUser = async (firebaseUser) => {
   const userSnap = await getDoc(userRef);
 
   if (userSnap.exists()) {
-    const existing = userSnap.data();
-
-    // Auto-create family if missing (older accounts)
-    if (!existing.familyId) {
-      const family = await createFamily(firebaseUser.uid, firebaseUser.displayName || 'Family');
-      await updateDoc(userRef, { familyId: family.id, updatedAt: new Date().toISOString() });
-      return { ...existing, familyId: family.id };
-    }
-
-    return existing;
+    return userSnap.data();
   }
 
   // Create new user document
@@ -81,9 +72,14 @@ export const createFamily = async (createdByUid, familyName) => {
       timezone: 'Asia/Jakarta'
     }
   };
-
-  const docRef = await addDoc(familiesRef, familyData);
-  return { id: docRef.id, ...familyData };
+  
+  const docRef = await setDoc(doc(familiesRef), familyData);
+  const familySnap = await getDocs(query(familiesRef, where('createdBy', '==', createdByUid)));
+  
+  // Return the created family
+  if (familySnap.docs.length > 0) {
+    return { id: familySnap.docs[0].id, ...familySnap.docs[0].data() };
+  }
 };
 
 /**
