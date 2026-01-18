@@ -91,12 +91,12 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
     }
   };
 
-  // Sync displayName from userData when it changes
+  // Sync displayName from userData when it changes (but not during editing)
   useEffect(() => {
-    if (userData?.displayName) {
+    if (userData?.displayName && !editingName) {
       setDisplayName(userData.displayName);
     }
-  }, [userData]);
+  }, [userData, editingName]);
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500 pb-20 px-1.5">

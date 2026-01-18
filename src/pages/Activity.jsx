@@ -62,7 +62,7 @@ export const Activity = ({ transactions, wallets, budgets, handleDeleteTransacti
 
       return matchMonth && matchType && matchSearch;
     });
-  }, [transactions, selectedMonth, filterType, searchQuery]);
+  }, [transactions, selectedMonth, filterType, searchQuery, familyUsers]);
 
   // Group transactions by date
   const groupedTransactions = useMemo(() => {
