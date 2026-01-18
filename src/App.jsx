@@ -304,6 +304,7 @@ export default function App() {
             showConfirm={showConfirm}
             setLoading={setLoading}
             isReadOnly={isReadOnly}
+            familyUsers={familyUsers}
           />
         );
       case 'manage':
