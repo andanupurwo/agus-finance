@@ -1,8 +1,9 @@
 import { doc, getDoc, setDoc, collection, getDocs, updateDoc, query, where, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
-const SUPERADMIN_EMAIL = 'andanupurwo@gmail.com';
-const ADMIN_EMAILS = ['ashrinurhida@gmail.com'];
+export const SUPERADMIN_EMAIL = 'andanupurwo@gmail.com';
+export const ADMIN_EMAILS = ['ashrinurhida@gmail.com'];
+export const WHITELIST_EMAILS = [SUPERADMIN_EMAIL, ...ADMIN_EMAILS];
 
 /**
  * Get user role based on email (for backwards compatibility)

@@ -16,7 +16,7 @@ import { useTransactions } from './hooks/useTransactions';
 import { useTheme } from './context/ThemeContext';
 import { formatRupiah, parseRupiah } from './utils/formatter';
 import { cacheManager } from './utils/cacheManager';
-import { getOrCreateUser } from './utils/userRoles';
+import { getOrCreateUser, WHITELIST_EMAILS } from './utils/userRoles';
 
 export default function App() {
   const { isDark } = useTheme();
@@ -152,6 +152,15 @@ export default function App() {
       setLoading(true);
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
+
+      // SECURITY: Check Email Whitelist
+      if (!WHITELIST_EMAILS.includes(user.email)) {
+        await signOut(auth);
+        showToast('Akses ditolak (Email tidak terdaftar)', 'error');
+        setLoading(false);
+        return;
+      }
+
       const data = await getOrCreateUser(user);
       setFirebaseUser(user);
       setUserData(data);
