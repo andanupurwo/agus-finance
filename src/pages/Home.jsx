@@ -222,11 +222,40 @@ export const Home = ({
       {/* INPUT TRANSAKSI HARIAN */}
       {!isReadOnly && (
         <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm relative overflow-hidden transition-colors duration-300">
-          <div className="mb-4">
-            <label className="text-[9px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-1.5 block">Nominal</label>
-            <div className="flex items-center gap-2 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 focus-within:border-blue-500 dark:focus-within:border-blue-400 transition-colors duration-300">
-              <span className="text-lg font-bold text-slate-600 dark:text-slate-400">Rp</span>
-              <input type="text" inputMode="numeric" value={nominal} onChange={(e) => handleNominalInput(e, setNominal)} placeholder="0" className="w-full bg-transparent text-2xl font-bold text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-700 outline-none" />
+          <div className="mb-4 space-y-3">
+            {/* TARGET SELECTION */}
+            <div>
+              <label className="text-[9px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-1.5 block">Target</label>
+              <div className="relative">
+                <select
+                  value={selectedTarget}
+                  onChange={(e) => setSelectedTarget(e.target.value)}
+                  className="w-full appearance-none bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm font-medium focus:border-blue-500 dark:focus:border-blue-400 outline-none transition-colors duration-300"
+                >
+                  <option value="">Pilih Kategori / Dompet</option>
+                  <optgroup label="Pos Pengeluaran (Untuk Transaksi Keluar)">
+                    {budgets.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Sumber Dana (Untuk Pemasukan)">
+                    {wallets.map(w => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))}
+                  </optgroup>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[9px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-1.5 block">Nominal</label>
+              <div className="flex items-center gap-2 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 focus-within:border-blue-500 dark:focus-within:border-blue-400 transition-colors duration-300">
+                <span className="text-lg font-bold text-slate-600 dark:text-slate-400">Rp</span>
+                <input type="text" inputMode="numeric" value={nominal} onChange={(e) => handleNominalInput(e, setNominal)} placeholder="0" className="w-full bg-transparent text-2xl font-bold text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-700 outline-none" />
+              </div>
             </div>
           </div>
 
