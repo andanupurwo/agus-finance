@@ -20,7 +20,55 @@ import { getOrCreateUser } from './utils/userRoles';
 
 export default function App() {
   const { isDark } = useTheme();
-  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'home');
+  // --- NAVIGATION STATE & LOGIC ---
+  // Initialize from URL or localStorage
+  const [activeTab, setActiveTab] = useState(() => {
+    // Check URL first for deep linking
+    const params = new URLSearchParams(window.location.search);
+    const urlTab = params.get('tab');
+    if (urlTab && ['home', 'activity', 'manage', 'settings'].includes(urlTab)) {
+      return urlTab;
+    }
+    return localStorage.getItem('activeTab') || 'home';
+  });
+
+  // Handle Browser Back Button (PopState)
+  useEffect(() => {
+    const handlePopState = (event) => {
+      // If state exists, use it. Otherwise default to home or parsed URL
+      const tab = event.state?.tab;
+      if (tab) {
+        setActiveTab(tab);
+      } else {
+        // Fallback if no state (e.g. initial load or external nav)
+        const params = new URLSearchParams(window.location.search);
+        const urlTab = params.get('tab') || 'home';
+        setActiveTab(urlTab);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Custom Tab Change Handler (pushes history)
+  const handleTabChange = (tabId) => {
+    if (tabId === activeTab) return;
+
+    // Update URL and History
+    // If going to Home, we can use root path '/' or '?tab=home'. Root is cleaner.
+    const url = tabId === 'home' ? '/' : `?tab=${tabId}`;
+
+    // Use pushState to add to history stack (enabling Back button)
+    window.history.pushState({ tab: tabId }, '', url);
+
+    setActiveTab(tabId);
+    localStorage.setItem('activeTab', tabId);
+
+    // Optional: Scroll to top when changing tabs
+    window.scrollTo(0, 0);
+  };
+
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -537,7 +585,7 @@ export default function App() {
 
       <main className="flex-1 pt-24 px-1.5 sm:px-3 pb-20 overflow-y-auto">{renderContent()}</main>
 
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+      <BottomNav activeTab={activeTab} setActiveTab={handleTabChange} />
     </div>
   );
 }
