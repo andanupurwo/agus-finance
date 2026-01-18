@@ -19,7 +19,10 @@ export const Manage = ({
   showToast,
   showConfirm,
   isReadOnly,
-  setEditingData
+  setEditingData,
+  userData,
+  currentUserId,
+  familyUsers
 }) => {
   const [orderedWallets, setOrderedWallets] = useState(wallets);
   const [orderedBudgets, setOrderedBudgets] = useState(budgets);

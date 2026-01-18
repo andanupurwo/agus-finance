@@ -29,7 +29,9 @@ export const Home = ({
   showConfirm,
   isReadOnly,
   familyId,
-  currentUserId
+  currentUserId,
+  userData,
+  familyUsers
 }) => {
   const { handleDailyTransaction, handleNominalInput } = useTransactions(showToast, showConfirm);
   const [orderedBudgets, setOrderedBudgets] = useState(budgets);
