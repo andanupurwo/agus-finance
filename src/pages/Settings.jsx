@@ -330,7 +330,10 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
         >
           <div className="flex items-center gap-3">
             <BarChart3 size={20} className="text-purple-600 dark:text-purple-400" />
-            <h3 className="font-bold text-slate-900 dark:text-white">Informasi Aplikasi</h3>
+            <div className="text-left">
+              <h3 className="font-bold text-slate-900 dark:text-white">Informasi Aplikasi</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Statistik & versi aplikasi</p>
+            </div>
           </div>
           <ChevronDown size={20} className={`text-slate-600 dark:text-slate-400 transition-transform ${sections.appInfo ? 'rotate-180' : ''}`} />
         </button>
@@ -393,7 +396,10 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
         >
           <div className="flex items-center gap-3">
             <BookOpen size={20} className="text-emerald-600 dark:text-emerald-400" />
-            <h3 className="font-bold text-slate-900 dark:text-white">Panduan Penggunaan</h3>
+            <div className="text-left">
+              <h3 className="font-bold text-slate-900 dark:text-white">Panduan Penggunaan</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Pelajari cara menggunakan aplikasi</p>
+            </div>
           </div>
           <ChevronDown size={20} className={`text-slate-600 dark:text-slate-400 transition-transform ${sections.guide ? 'rotate-180' : ''}`} />
         </button>
@@ -489,7 +495,10 @@ export const Settings = ({ wallets, budgets, transactions, setLoading, loading, 
         >
           <div className="flex items-center gap-3">
             <Upload size={20} className="text-emerald-600 dark:text-emerald-400" />
-            <h3 className="font-bold text-slate-900 dark:text-white">Import Data</h3>
+            <div className="text-left">
+              <h3 className="font-bold text-slate-900 dark:text-white">Import Data</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Import data transaksi</p>
+            </div>
           </div>
           <ChevronDown size={20} className={`text-slate-600 dark:text-slate-400 transition-transform ${sections.import ? 'rotate-180' : ''}`} />
         </button>
