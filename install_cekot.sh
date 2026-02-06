@@ -26,30 +26,54 @@ else
     cat >> "$RC_FILE" << 'EOF'
 
 # --- Added by Agus Finance Project Installer ---
-# Cekot = Check Out (Save & Push)
+# Cekot = Check Out (Save & Push to 'update' branch ONLY)
 cekot() {
-    echo "🚀 Memulai proses Cekot (Commit & Push)..."
+    echo "🚀 Memulai proses Cekot (Commit & Push to branch 'update')..."
     
-    # 1. Cek status
-    if [ -z "$(git status --porcelain)" ]; then 
-        echo "Example: Working tree clean. Nothing to commit."
-        # Lanjut push untuk memastikan lokal branch ke-update ke remote jika ada beda commit lokal
-        # Tapi biasanya user pakai ini setelah edit file.
-    else
-        # 2. Add All
+    # 1. Simpan nama branch saat ini
+    local current_branch=$(git rev-parse --abbrev-ref HEAD)
+    local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+
+    # 2. Add All & Commit di branch saat ini (jika ada perubahan)
+    if [ -n "$(git status --porcelain)" ]; then 
+        echo "📝 Ada perubahan code, melakukan commit di branch '$current_branch'..."
         git add .
-        
-        # 3. Commit dengan Timestamp
-        local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
-        git commit -m "Cekot: $timestamp"
+        git commit -m "Cekot [WIP]: $timestamp"
+    else
+        echo "✅ Branch '$current_branch' bersih (tidak ada perubahan baru)."
     fi
 
-    # 4. Push ke remote (branch saat ini)
-    local current_branch=$(git rev-parse --abbrev-ref HEAD)
-    echo "📤 Uploading branch '$current_branch' ke GitHub..."
-    git push origin HEAD
+    # 3. Logika Push ke 'update'
+    if [ "$current_branch" = "update" ]; then
+        # Jika sudah di update, langsung push
+        echo "📤 Sedang di branch 'update', langsung push ke origin..."
+        git push origin update
+    else
+        # Jika bukan di update (misal di main atau fitur-x)
+        echo "🔀 Sedang di '$current_branch'. Menggabungkan ke 'update'..."
+        
+        # Pindah ke update
+        git checkout update 2>/dev/null || git checkout -b update
+        
+        # Pull dulu update terbaru dari server utk hindari konflik
+        echo "⬇️  Mengambil update terbaru dari server..."
+        git pull origin update --rebase 2>/dev/null
+        
+        # Merge perubahan dari branch awal tadi
+        echo "🔗 Merging '$current_branch' ke 'update'..."
+        git merge "$current_branch" -m "Merge from $current_branch (Cekot process)"
+        
+        # Push update ke server
+        echo "📤 Uploading branch 'update' ke GitHub..."
+        git push origin update
+        
+        # Kembali ke branch asal
+        echo "🔙 Kembali ke branch asal '$current_branch'..."
+        git checkout "$current_branch"
+    fi
     
-    echo "✅ Selesai! Semua perubahan sudah aman di GitHub."
+    echo "✅ Selesai! Pekerjaan Anda sudah aman di branch 'update'."
+    echo "🔒 Branch 'main' TIDAK disentuh/push. Silakan Merge PR manual di rumah."
 }
 # -----------------------------------------------
 EOF
