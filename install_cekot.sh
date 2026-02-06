@@ -44,7 +44,7 @@ cekot() {
     fi
 
     # 3. Logika Push ke 'update'
-    if [ "$current_branch" == "update" ]; then
+    if [ "$current_branch" = "update" ]; then
         # Jika sudah di update, langsung push
         echo "📤 Sedang di branch 'update', langsung push ke origin..."
         git push origin update
