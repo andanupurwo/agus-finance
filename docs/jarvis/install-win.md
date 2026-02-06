@@ -1,39 +1,24 @@
-# 🪟 Cara Install Jarvis di Windows (PowerShell)
+# 🪟 Cara Install Jarvis di Windows (PowerShell) - VERSI V2 (SYNC)
 
 1.  Buka PowerShell.
-2.  Cek apakah file profil sudah ada, ketik:
-    ```powershell
-    Test-Path $PROFILE
-    ```
-    *   Jika `False`, buat dulu dengan ketik: `New-Item -Type File -Force $PROFILE`
-3.  Buka file profil dengan Notepad:
-    ```powershell
-    notepad $PROFILE
-    ```
-4.  Copy & Paste kode berikut ke dalam Notepad tersebut:
+2.  Buka file profil: `notepad $PROFILE`
+3.  Hapus kode lama, ganti dengan yang baru ini:
 
     ```powershell
     # -------------------------------------------
-    # 🤖 JARVIS ALIASES (Agus Finance Workflow)
+    # 🤖 JARVIS ALIASES (Agus Finance / Global Workflow)
     # -------------------------------------------
     Write-Host "🤖 Jarvis aliases loaded!" -ForegroundColor Cyan
 
-    # 1. jarvis-setup: Sync main ke update
-    function Jarvis-Setup {
-        Write-Host "🚀 Starting Jarvis Setup..." -ForegroundColor Green
-        git checkout main
-        git pull origin main
-        git checkout update
-        git merge main
-        Write-Host "✅ Workspace ready on 'update' branch!" -ForegroundColor Green
-    }
-
-    # 2. jarvis-in: Pindah ke update
+    # 1. jarvis-in: Masuk kerja (Sync dari cloud/Github branch update)
     function Jarvis-In {
+        Write-Host "🚀 Jarvis-In: Syncing workspace from origin/update..." -ForegroundColor Cyan
         git checkout update
+        git pull origin update
+        Write-Host "✅ You are now up to date with the remote work!" -ForegroundColor Green
     }
 
-    # 3. jarvis-out: Commit & Push (butuh pesan)
+    # 2. jarvis-out: Pulang kerja (Simpan & Push ke update)
     function Jarvis-Out {
         param([string]$message)
         if (-not $message) {
@@ -44,10 +29,10 @@
         git add .
         git commit -m "$message"
         git push origin update
-        Write-Host "✅ Work saved and pushed to 'update'!" -ForegroundColor Green
+        Write-Host "✅ Work saved and pushed to 'update'! Safe to go home." -ForegroundColor Green
     }
 
-    # 4. jarvis-merge: Gabung ke main
+    # 3. jarvis-merge: Rilis fitur (Merge Update -> Main)
     function Jarvis-Merge {
         Write-Host "🚀 Merging 'update' to 'main'..." -ForegroundColor Cyan
         git checkout main
@@ -57,10 +42,17 @@
         git checkout update
         Write-Host "✅ Merged to main and back to workspace!" -ForegroundColor Green
     }
+
+    # 4. jarvis-setup: Reset/Sync total (Main -> Update)
+    function Jarvis-Setup {
+        Write-Host "🚀 Starting Jarvis Setup (Sync Main -> Update)..." -ForegroundColor Green
+        git checkout main
+        git pull origin main
+        git checkout update
+        git merge main
+        Write-Host "✅ Workspace synced with Main!" -ForegroundColor Green
+    }
     # -------------------------------------------
     ```
 
-5.  Simpan Notepad (`Ctrl + S`) dan Tutup.
-6.  Tutup PowerShell dan buka lagi.
-
-Selesai! Sekarang perintah `jarvis-setup`, `jarvis-out` siap digunakan.
+4.  Simpan (`Ctrl + S`) dan restart PowerShell.
